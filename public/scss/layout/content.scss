@@ -1,0 +1,16 @@
+@import "../helpers/variables.scss";
+
+body{
+  	background-color: $body-background;
+  	font-family: 'Lucida-Sans';
+  	color: #9b9b9b;
+}
+
+select, option{
+	font-family: 'Lucida-Sans';
+	font-size: 12px;
+}
+
+.clear-float{
+	clear: both;	
+}

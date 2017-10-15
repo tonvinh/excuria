@@ -1,0 +1,143 @@
+@import "../helpers/variables.scss";
+
+.sider-bar{
+	padding-left: $margin-left-common;
+    padding-right: $margin-right-common;
+    margin-top: $sidebar-spacing;
+    & ul{
+    	padding-left: $sidebar-list-spacing;
+    	min-width: $sidebar-list-minwidth;
+    }
+    & ul li{
+    	list-style-type: none;
+        height: 48px;
+    	font-size: 15px;
+    	position: relative;
+        cursor: pointer;
+        width: calc(100% + 35px);
+
+        &:nth-child(1){
+            & span{
+                border-top: solid 1px #dbdbdb;
+            }
+        }
+
+        &.parent-sider-bar{
+            position: relative;
+            z-index: 1;
+
+            & .child-sider-bar{
+                display: none;
+                position: absolute;
+                z-index: 1;
+                left: 360px;
+                top: 0;
+                background: #ffffff;
+                max-width: 100%;
+                min-width: 230px;
+                min-height: 112px;
+                & li {
+                    & input{
+                        width: 18px;
+                        height: 18px;
+                    }
+                    & span{
+                        position: relative;
+                        top: 0;
+                        left: 10px;
+                    }
+                }
+                &.age-item{
+                    height: 160px;
+                }
+            }
+            &:hover{
+                & .child-sider-bar{
+                    display: block;
+                    box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+                    -webkit-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+                    -moz-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+                    -ms-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+                    -o-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+                    & li{
+                        border: none;
+                        padding-top: 11px;
+                        padding-bottom: 11px;
+                        padding-left: 28px;
+                        width: 100%;
+                        box-shadow: none;
+                        -webkit-box-shadow: none;
+                        -moz-box-shadow: none;
+                        -ms-box-shadow: none;
+                        -o-box-shadow: none;
+
+                        &:after{
+                            content: none;
+                        }
+                    }
+                }
+            }
+            & li span{
+                display: initial;
+                padding-left: 0;
+                padding-right: 0;
+            }
+        }
+
+        & span{
+            height: 47px;
+            display: table;
+            width: 100%;
+            padding-top: 11px;
+            padding-bottom: 11px;
+            padding-left: 28px;
+            border-bottom: solid 1px #dbdbdb;
+            width: calc(100% - 18px);
+            font-family: 'Lucida-SansDeni';
+            font-size: 15px;
+        }
+
+    	&:after{
+    		content: '';
+		    height: 10px;
+		    width: 10px;
+		    transform: rotate(45deg);
+            -webkit-transform: rotate(45deg);
+            -moz-transform: rotate(45deg);
+            -ms-transform: rotate(45deg);
+            -o-transform: rotate(45deg);
+		    opacity: 0.31;
+		    display: inline-block;
+		    border-top: 2px solid #000000;
+    		border-right: 2px solid #000000;
+    		position: absolute;
+    		right: 25px;
+    		top: 16px;
+            z-index: 0;
+    	}
+
+        &:hover{
+            background: #ffffff;
+            box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+            -webkit-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+            -moz-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+            -o-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+            -ms-box-shadow: 0 1px 4px 0 rgba(200, 200, 200, 0.5);
+
+            & span{
+                background: #ffffff;
+                border: none;
+            }
+        }
+    }
+}
+
+.label-age{
+    position: relative;
+    top: -12px;
+    min-width: 38px;
+    margin-right: 10px;
+    font-weight: normal;
+    font-size: 14px;
+    font-family: 'Lucida-Sans';
+}

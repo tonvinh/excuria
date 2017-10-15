@@ -1,0 +1,19 @@
+.alpha-filter{
+	padding-left: 0;
+    position: absolute;
+    right: 27px;
+    font-size: 12px;
+    text-transform: uppercase;
+    & li{
+    	list-style-type: none;
+    	line-height: 1.67;
+    	cursor: pointer;
+        font-family: 'Lucida-SansDeni';
+    	&.select{
+    		color: #d32769;
+    	}
+    	&:hover{
+    		color: #d32769;	
+    	}
+    }
+}

@@ -1,0 +1,35 @@
+.close-item{
+	display: inherit;
+	position: relative;
+    top: -2px;
+
+	& .close-left{
+		content: ' ';
+	    height: 12px;
+	    width: 12px;
+	    transform: rotate(45deg);
+	    -webkit-transform: rotate(45deg);
+	    -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	    -o-transform: rotate(45deg);
+	    opacity: 0.31;
+	    display: inline-block;
+	    border-right: 1px solid #000000;
+	}
+	& .close-right{
+		content: ' ';
+	    height: 12px;
+	    width: 12px;
+	    transform: rotate(-45deg);
+	    -webkit-transform: rotate(-45deg);
+	    -moz-transform: rotate(-45deg);
+	    -ms-transform: rotate(-45deg);
+	    -o-transform: rotate(-45deg);
+	    opacity: 0.31;
+	    display: inline-block;
+	    border-right: 1px solid #000000;
+	    position: relative;
+	    right: 12px;
+	    top: 8px;
+	}
+}

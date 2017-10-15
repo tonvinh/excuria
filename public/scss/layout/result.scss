@@ -1,0 +1,117 @@
+@import "../helpers/variables.scss";
+
+.result-content{
+	padding-left: $margin-left-common;
+    padding-right: $margin-right-common;
+    width: $result-width;
+    position: absolute;
+    right: 0;
+}
+
+.result-content-top{
+    margin-left: 20%;
+}
+
+.result-list{
+    border-radius: $result-radius 0 0 0;
+    height: $result-height;
+    background: $result-background;
+    padding-left: $margin-left-common;
+    padding-right: $margin-right-common;
+    padding-top: $result-list-spacingtop;
+    padding-left: $result-list-spacingleft;
+    margin-top: $result-spacing;
+}
+
+.result-list-area{
+    // width: $result-list-width;
+    padding-right: 0;
+}
+
+.result-spacing-right{
+    margin-right: $result-right-spacing;
+}
+
+.result-area-spacing-right{
+    padding-right: 292px;
+}
+
+.result-item-area{
+    margin-top: 12px;
+    position: relative;
+    & .result-item-content{
+        float: left;
+        width: 100%;
+        overflow: scroll;
+        overflow-x: hidden;
+        height: 865px;
+    }
+
+    & .result-item-alpha{
+        position: absolute;
+        right: -12px;
+    }
+}
+
+.result-item-list{
+    width: calc(100% - 45px);
+    display: table;
+    border-top: 1px solid #cbcbcb;
+
+    & .result-left-list{
+        float:left;
+        display: table;
+        min-height: 82px;
+
+        & .result-img{
+            // background-size: contain!important;
+            width: 73.6px;
+            height: 73.6px;
+            background-repeat: no-repeat!important;
+            background-position: center!important;
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        & .result-name{
+            font-size: 14px;
+            letter-spacing: -0.5px;
+            text-align: left;
+            color: #747474;
+            text-transform: capitalize;
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 19.5px;
+            padding-right: 19.5px;
+            font-family: 'Lucida-SansDeni';
+        }
+    }
+    & .result-right-list{
+        float: right;
+
+        & .result-right-itemparent{
+            display: inline-block;
+            margin-right: 13px;
+            & .result-right-item{
+                display: table;
+                min-height: 77px;
+                & .result-img{
+                    background-size: contain!important;
+                    width: 37px;
+                    height: 37px;
+                    background-repeat: no-repeat!important;
+                    background-position: center!important;
+                    display: table-cell;
+                    vertical-align: middle;
+                }
+            }
+            &:last-child{
+                margin-right: 0;
+            }
+        }
+    }
+
+    &:last-child{
+        border-bottom: 1px solid #cbcbcb;
+    }
+}

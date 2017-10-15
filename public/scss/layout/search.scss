@@ -1,0 +1,18 @@
+.search-bar{
+	margin-top: 23px;
+}
+
+.search-bar-left{
+	float: left;
+}
+
+.search-bar-right{
+	float: right;
+	margin-top: -6px;
+	& label{
+		position: relative;
+    	top: -12px;
+    	font-weight: normal;
+    	font-size: 12px;
+	}
+}

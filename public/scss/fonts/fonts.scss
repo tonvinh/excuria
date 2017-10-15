@@ -1,0 +1,26 @@
+@font-face
+{
+    font-family: 'Lucida-Sans';
+    font-weight: normal;
+    font-style: normal;
+
+    src: url('../fonts/Lucida-Sans.eot');
+    src: url('../fonts/Lucida-Sans.eot?#iefix') format('embedded-opentype'), 
+    	 url('../fonts/Lucida-Sans.woff') format('woff'), 
+    	 url('../fonts/Lucida-Sans.ttf') format('truetype'), 
+    	 url('../fonts/Lucida-Sans.svg#Lucida-Sans') format('svg');
+}
+
+
+@font-face
+{
+    font-family: 'Lucida-SansDeni';
+    font-weight: normal;
+    font-style: normal;
+
+    src: url('../fonts/LucidaSansDemibold.eot');
+    src: url('../fonts/LucidaSansDemibold.eot?#iefix') format('embedded-opentype'), 
+         url('../fonts/LucidaSansDemibold.woff') format('woff'), 
+         url('../fonts/LucidaSansDemibold.ttf') format('truetype'), 
+         url('../fonts/LucidaSansDemibold.svg#LucidaSansDemibold') format('svg');
+}

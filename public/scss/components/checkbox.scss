@@ -1,0 +1,54 @@
+.checkbox-default{
+	position: absolute;
+  	opacity: 0;
+  	z-index: 1;
+  	& + lable{
+  		&::before{
+  			content: '';
+		    display: inline-block;
+		    vertical-align: text-top;
+		    width: 18px;
+		    height: 18px;
+		    background: #ffffff;
+		    border: 2px solid #9b9b9b;
+		    position: relative;
+		    top: 0px;
+		    left: 0;
+  		}
+  	}
+  	&:hover{
+  		& + lable{
+  			&::before{
+  				background: #d2296b;
+  			}
+  		}
+  	}
+  	&:checked{
+  		& + lable{
+  			&::before{
+  				background: #d2296b;
+    			border: 2px solid transparent;
+  			}
+  			&::after{
+  				content: '';
+			    position: absolute;
+			    left: 32px;
+			    top: 21px;
+			    background: white;
+			    width: 2px;
+			    height: 2px;
+			    -webkit-box-shadow: 2px 0 0 white, 4px 0 0 white, 4px -2px 0 white, 4px -4px 0 white, 4px -6px 0 white, 4px -8px 0 white;
+			    -moz-box-shadow: 2px 0 0 white, 4px 0 0 white, 4px -2px 0 white, 4px -4px 0 white, 4px -6px 0 white, 4px -8px 0 white;
+			    -ms-box-shadow: 2px 0 0 white, 4px 0 0 white, 4px -2px 0 white, 4px -4px 0 white, 4px -6px 0 white, 4px -8px 0 white;
+			    -o-box-shadow: 2px 0 0 white, 4px 0 0 white, 4px -2px 0 white, 4px -4px 0 white, 4px -6px 0 white, 4px -8px 0 white;
+			    box-shadow: 2px 0 0 white, 4px 0 0 white, 4px -2px 0 white, 4px -4px 0 white, 4px -6px 0 white, 4px -8px 0 white;
+			    -webkit-transform: rotate(45deg);
+			    -moz-transform: rotate(45deg);
+			    -ms-transform: rotate(45deg);
+			    -o-transform: rotate(45deg);
+			    transform: rotate(45deg);
+			    z-index: 2;
+  			}
+  		}
+  	}
+}
