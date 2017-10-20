@@ -48,7 +48,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -108,7 +108,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
@@ -167,7 +167,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -245,7 +245,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -300,7 +300,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -355,7 +355,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -411,7 +411,7 @@ class SearchController extends Controller
 	public function prepareFilter(Request $request, $name)
 	{
 		$mem = new Memcached();
-		$mem->addServer("127.0.0.1", 11211);
+		$mem->addServer("memcache.excuri.com", 11211);
 
 		switch ($name) {
 			case 'country': {
@@ -1004,7 +1004,7 @@ class SearchController extends Controller
 				$search = new Provider();
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 
 				$resultMem = $mem->get('entity_provider');
 
@@ -1036,7 +1036,7 @@ class SearchController extends Controller
 				$search = new Course();
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 
 				$resultMem = $mem->get('entity_course');
 
@@ -1068,7 +1068,7 @@ class SearchController extends Controller
 				$search = new Instructor();
 
 				$mem = new Memcached();
-				$mem->addServer("127.0.0.1", 11211);
+				$mem->addServer("memcache.excuri.com", 11211);
 
 				$resultMem = $mem->get('entity_instructor');
 

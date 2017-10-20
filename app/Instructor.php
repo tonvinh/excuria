@@ -33,7 +33,7 @@ class Instructor extends BaseSearch
 		$alphabets = [];
 
 		$mem = new Memcached();
-		$mem->addServer("127.0.0.1", 11211);
+		$mem->addServer("memcache.excuri.com", 11211);
 
 		/* Get Default Logo Link on setting_object table */
 		$logoMem1 = $mem->get('logo_provider');
