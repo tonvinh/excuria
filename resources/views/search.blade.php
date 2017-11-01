@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="en">
 <head>
     <title>ExecuriA</title>
     <meta charset="utf-8">
@@ -20,18 +19,20 @@
             <div id="suggesstion-box"></div>
         </div>
         <div class="clear-float"></div>
-        <div class="search-bar result-spacing-right">
-            @if (!isset($_REQUEST['HideHeatherRawTab']) || strtolower($_REQUEST['HideHeatherRawTab']) != 'true')
+
+        @if (!isset($_REQUEST['hideHeatherRawTab']) || strtolower($_REQUEST['hideHeatherRawTab']) != 'true')
             <div class="search-bar-left">
-                <a id="entity-provider" href="/search?activeTAB=provider" class="object-entity button-default-bd {{ isset($path) && $path=='provider' ? 'button-active' : '' }}">Providers</a>
-                <a id="entity-course" href="/search?activeTAB=course" class="object-entity button-default-bd {{ isset($path) && $path=='course' ? 'button-active' : '' }}">Courses</a>
-                <a id="entity-instructor" href="/search?activeTAB=instructor" class="object-entity button-default-bd {{ isset($path) &&  $path=='instructor' ? 'button-active' : '' }}">Instructors</a>
+                <div class="search-bar result-spacing-right">
+
+                    <a id="entity-provider" href="/search?activeTAB=provider" class="object-entity button-default-bd {{ isset($path) && $path=='provider' ? 'button-active' : '' }}">Providers</a>
+                    <a id="entity-course" href="/search?activeTAB=course" class="object-entity button-default-bd {{ isset($path) && $path=='course' ? 'button-active' : '' }}">Courses</a>
+                    <a id="entity-instructor" href="/search?activeTAB=instructor" class="object-entity button-default-bd {{ isset($path) &&  $path=='instructor' ? 'button-active' : '' }}">Instructors</a>
+                </div>
             </div>
-            @endif
-        </div>
-        <div class="clear-float"></div>
-        <hr class="break-line result-spacing-right">
-        @if (!isset($_REQUEST['HideHeatherRawChoosenFilter']) || strtolower($_REQUEST['HideHeatherRawChoosenFilter']) != 'true')
+            <div class="clear-float"></div>
+            <hr class="break-line result-spacing-right">
+        @endif
+        @if (!isset($_REQUEST['hideHeatherRawChoosenFilter']) || strtolower($_REQUEST['hideHeatherRawChoosenFilter']) != 'true')
         <div id="tips" class="tips-area">
             {{--<div class="tips-element">Clear all
                 <div class="close-item">
@@ -42,14 +43,14 @@
         @endif
 
         <div class="search-bar result-spacing-right last">
-        @if (!isset($_REQUEST['HideHeatherRawSort']) || strtolower($_REQUEST['HideHeatherRawSort']) != 'true')
+        @if (!isset($_REQUEST['hideHeatherRawSort']) || strtolower($_REQUEST['hideHeatherRawSort']) != 'true')
             <div class="search-bar-right">
                 <label>Sort by</label>
                 <div class="select-parent">
                     <select id="sort" class="select-box sort">
                         @if ( isset($path) && ($path == 'instructor') )
-                            <option value="firstName">Instructor (First Name + Last Name)</option>
-                            <option value="lastName">Instructor (Last Name + First Name)</option>
+                            <option value="firstName">Instructor (First + LAST)</option>
+                            <option value="lastName">Instructor (LAST + First)</option>
                         @endif
 
                         @if ( isset($path) && ($path == 'provider') )
@@ -65,7 +66,7 @@
                     </select>
                     <span class="arrow-icon"></span>
                 </div>
-                <label>Items per Pages</label>
+                <label>Items per Page</label>
                 <div class="select-parent item">
                     <select id="perPage"class="select-box item">
                         <option value="10">10</option>
@@ -79,7 +80,7 @@
         </div>
     </div>
 
-    @if (!isset($_REQUEST['HideLeftFilter']) || strtolower($_REQUEST['HideLeftFilter']) != 'true')
+    @if (!isset($_REQUEST['hideLeftFilter']) || strtolower($_REQUEST['hideLeftFilter']) != 'true')
     <div class="col-md-2 sider-bar">
         <ul>
             @if ( isset($path) && ($path == 'course') )
@@ -406,6 +407,8 @@
     <div class="col-md-10 result-content">
         <div class="col-md-12 result-list-area">
             <div class="result-list result-area-spacing-right">
+                <?php $alphaCharacters = [];?>
+
                 <div class="pagination-area result-spacing-right">
                     @if ( isset($debug))
                         <script> console.log("{!! $debug !!}");</script>
@@ -433,7 +436,7 @@
 
                 <div class="result-item-area">
                     <div class="result-item-content custom-scrollbar">
-                        @if ( isset($result))
+                        @if ( isset($result) && (sizeof($result) > 0))
                             @foreach($result as $data)
                                 <div class="result-item-list">
 									<?php
@@ -463,11 +466,13 @@
 												$row = '';
 												if( isset($data['item']['entity_name']) && $data['item']['entity_name'] != null)
 												{
-													$row .= $data['item']['entity_name'] . " | " ;
+													$row .= '<span title="' . $data['item']['entity_name'] . '">'
+														.  ( strlen($data['item']['entity_name']) > 15 ? substr($data['item']['entity_name'], 0, 15) . '...' : $data['item']['entity_name']) . "</span> | " ;
 												}
 												if( isset($data['item']['curriculum_name']) && $data['item']['curriculum_name'] != null)
 												{
-													$row .= $data['item']['curriculum_name'] . " | " ;
+													$row .= '<span title="' . $data['item']['curriculum_name'] . '">'
+														.  ( strlen($data['item']['curriculum_name']) > 15 ? substr($data['item']['curriculum_name'], 0, 15) . '...' : $data['item']['curriculum_name']) . "</span> | " ;
 												}
 												if( isset($data['item']['day_name']) && $data['item']['day_name'] != null)
 												{
@@ -481,18 +486,46 @@
 												{
 													$row .= $data['item']['time_end'] ;
 												}
-												echo trim($row);
+
+												$content = trim($row);
+												echo $content;
+												/* Prepare Alpha available data */
+												$alphaCharacters [] = strtoupper(substr($content,0,1));
+
 												?>
                                             @elseif ( isset($path) && ($path == 'provider') )
 												<?php  if( isset($data['item']['provider_name']) && $data['item']['provider_name'] != null)
 												{
-													echo trim($data['item']['provider_name']);
+													$content  = trim($data['item']['provider_name']);
+													echo $content;
+
+													/* Prepare Alpha available data */
+													$alphaCharacters [] = strtoupper(substr($content,0,1));
 												}
 												?>
                                             @elseif ( isset($path) && ($path == 'instructor') )
-												<?php if( (isset($data['item']['first_name']) && $data['item']['first_name'] != null) || (isset($data['item']['last_name']) && $data['item']['last_name'] != null)) {
-													echo trim($data['item']['first_name'] . " " . $data['item']['last_name']);
+												<?php
+												if( isset($_REQUEST['sortBy']) && $_REQUEST['sortBy'] === 'firstName' &&
+													((isset($data['item']['first_name']) && $data['item']['first_name'] != null) || (isset($data['item']['last_name']) && $data['item']['last_name'] != null))
+												) {
+													$content  = trim($data['item']['first_name'] . " " . strtoupper($data['item']['last_name']));
+													echo $content;
 												}
+												else if( isset($_REQUEST['sortBy']) && $_REQUEST['sortBy'] === 'lastName' &&
+													((isset($data['item']['first_name']) && $data['item']['first_name'] != null) || (isset($data['item']['last_name']) && $data['item']['last_name'] != null))
+												) {
+
+													$content  = trim(strtoupper($data['item']['last_name']) . ' ' . $data['item']['first_name']);
+													echo $content;
+												}
+												else {
+													$content  = trim($data['item']['first_name'] . " " . strtoupper($data['item']['last_name']));
+													echo $content;
+												}
+
+												/* Prepare Alpha available data */
+												$alphaCharacters [] = strtoupper(substr($content,0,1));
+
 												?>
                                             @endif
                                         </p>
@@ -512,38 +545,40 @@
                                     </div>
                                 </div>
                             @endforeach
+                        @else
+                            <div class="enpty-result">No Search Results</div>
                         @endif
                     </div>
 
-                    @if (!isset($_REQUEST['HideRightAplhabet']) || strtolower($_REQUEST['HideRightAplhabet']) != 'true')
+                    @if (!isset($_REQUEST['hideRightAplhabet']) || strtolower($_REQUEST['hideRightAplhabet']) != 'true')
                     <div class="result-item-alpha">
                         <ul class="alpha-filter">
-                            <li>A</li>
-                            <li>B</li>
-                            <li>C</li>
-                            <li>D</li>
-                            <li>E</li>
-                            <li>F</li>
-                            <li>G</li>
-                            <li>H</li>
-                            <li>I</li>
-                            <li>J</li>
-                            <li>K</li>
-                            <li>L</li>
-                            <li>M</li>
-                            <li>N</li>
-                            <li>O</li>
-                            <li>P</li>
-                            <li>Q</li>
-                            <li>R</li>
-                            <li>S</li>
-                            <li>T</li>
-                            <li>U</li>
-                            <li>V</li>
-                            <li>W</li>
-                            <li>X</li>
-                            <li>Y</li>
-                            <li>Z</li>
+                            <li class="{{ in_array("A", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">A</li>
+                            <li class="{{ in_array("B", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">B</li>
+                            <li class="{{ in_array("C", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">C</li>
+                            <li class="{{ in_array("D", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">D</li>
+                            <li class="{{ in_array("E", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">E</li>
+                            <li class="{{ in_array("F", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">F</li>
+                            <li class="{{ in_array("G", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">G</li>
+                            <li class="{{ in_array("H", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">H</li>
+                            <li class="{{ in_array("I", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">I</li>
+                            <li class="{{ in_array("J", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">J</li>
+                            <li class="{{ in_array("K", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">K</li>
+                            <li class="{{ in_array("L", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">L</li>
+                            <li class="{{ in_array("M", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">M</li>
+                            <li class="{{ in_array("N", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">N</li>
+                            <li class="{{ in_array("O", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">O</li>
+                            <li class="{{ in_array("p", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">P</li>
+                            <li class="{{ in_array("Q", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">Q</li>
+                            <li class="{{ in_array("R", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">R</li>
+                            <li class="{{ in_array("S", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">S</li>
+                            <li class="{{ in_array("T", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">T</li>
+                            <li class="{{ in_array("U", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">U</li>
+                            <li class="{{ in_array("V", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">V</li>
+                            <li class="{{ in_array("W", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">W</li>
+                            <li class="{{ in_array("X", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">X</li>
+                            <li class="{{ in_array("Y", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">Y</li>
+                            <li class="{{ in_array("Z", $alphaCharacters) === true ? 'alapha-data' : 'alpha-nodata' }}">Z</li>
                         </ul>
                     </div>
                     @endif
@@ -570,5 +605,7 @@
         </div>
     </div>
 </div>
+
+<div class="loading" id="loading"></div>
 </body>
 </html>

@@ -1,9 +1,49 @@
 var _GET = queryString();
-var paths = window.location.pathname.substr(1,window.location.pathname.length).split("/");
-var fullSuggestion= null;
 
-$(document).ready(function() {
+var paths = window.location.pathname.substr(1, window.location.pathname.length).split("/");
 
+var fullSuggestion = null;
+var _updateFilter = false;
+var flagLoad = true;
+
+$(document).ready(function () {
+
+    $.ajax(
+        {
+            type: "GET",
+            url: "#",
+            beforeSend: function () {
+
+                TipsResize();
+                SelectAlpha();
+
+                loadHints();
+                loadSort();
+                loadPerPage();
+                ScorllBallItem();
+
+                /* auto set activeTAB is provider on url on search function access */
+                if (typeof(_GET['activeTAB']) === "undefined") {
+                    _GET['activeTAB'] = 'provider';
+                    updateUrl();
+                }
+
+                if (typeof(_GET['activeTAB']) !== "undefined") {
+                    document.title = " Excuri | " +  _GET['activeTAB'][0].toUpperCase() +  _GET['activeTAB'].slice(1) + " Search Results";
+                }
+
+                loadReady();
+            },
+            success: function () {
+                flagLoad = false;
+                loadingOverlay();
+            }
+        }
+    );
+
+});
+
+function loadReady() {
     /* Receive all auto suggestion for search box */
     $.ajax({
         type: "GET",
@@ -17,44 +57,42 @@ $(document).ready(function() {
         }
     });
 
-    TipsResize();
-    SelectAlpha();
+    setupAutoComplete();
 
-    loadHints();
-    loadSort();
-    loadPerPage();
-    ScorllBallItem();
+    loadFilters();
 
-    /* auto set activeTAB is provider on url on search function access */
-    if ( typeof(_GET['activeTAB']) === "undefined")
-    {
-        _GET['activeTAB'] = 'provider';
-        updateUrl();
-    }
+    loadTotal();
+    updateResult();
+    /* update display the result of page with an total */
+    updatePagesLink();
+    clearSearchBox();
 
+}
+
+function loadFilters() {
     paths[1] = _GET['activeTAB'];
     /**/
-
-    switch(paths[1])
-    {
-        case 'provider':
-        {
+    switch (paths[1]) {
+        case 'provider': {
             loadClassAvailable();
             loadCountry();
             loadCity();
             loadLocation();
             loadActivityType();
+            loadActivityClassification();
+            loadActivity();
             loadSearchKeyword();
 
             break;
         }
-        case 'course':
-        {
+        case 'course': {
             loadFreeTrial();
             loadCountry();
             loadCity();
             loadLocation();
             loadActivityType();
+            loadActivityClassification();
+            loadActivity();
             loadEventType();
             loadFacility();
             loadCampus();
@@ -73,36 +111,28 @@ $(document).ready(function() {
             loadKeyword();
             break;
         }
-        case 'instructor':
-        {
+        case 'instructor': {
             loadClassAvailable();
             loadCountry();
             loadCity();
             loadLocation();
             loadActivityType();
+            loadActivityClassification();
+            loadActivity();
             loadSearchKeyword();
             loadProvider();
 
             break;
         }
     }
+}
 
-    loadTotal();
-    updateResult(); /* update display the result of page with an total */
-    updatePagesLink();
-    clearSearchBox();
-    setupAutoComplete();
-
-});
-
-
-function queryString()
-{
-    var queryString = window.location.search.substr(1,window.location.search.length);
+function queryString() {
+    var queryString = window.location.search.substr(1, window.location.search.length);
     var varArray = queryString.split("&");
 
     var arr = [];
-    for (var i=0;i<varArray.length;i++) {
+    for (var i = 0; i < varArray.length; i++) {
         var item = varArray[i].split("=");
 
         arr[item[0]] = decodeURIComponent(item[1]);
@@ -110,8 +140,7 @@ function queryString()
     return arr;
 }
 
-function loadTotal()
-{
+function loadTotal() {
     $.ajax({
         type: "GET",
         url: "/total/provider",
@@ -143,8 +172,7 @@ function loadTotal()
     });
 }
 
-function updateTitleWithTotal()
-{
+function updateTitleWithTotal() {
     //var paths = window.location.pathname.substr(1, window.location.pathname.length).split("/");
 
     switch (paths[1]) {
@@ -165,17 +193,19 @@ function updateTitleWithTotal()
     CheckNumPage();
 }
 
-function updateResult(){
+function updateResult() {
 
     //var paths = window.location.pathname.substr(1,window.location.pathname.length).split("/");
 
-    switch(paths[1])
-    {
-        case 'provider':
-        {
+    switch (paths[1]) {
+        case 'provider': {
             $.ajax({
                 type: "GET",
                 url: "/searchUpdate/provider" + location.search,
+                beforeSend: function () {
+                    _updateFilter = true;
+                    loadingOverlay();
+                },
                 success: function (response) {
                     $('.result-list').html("").append(response);
 
@@ -183,17 +213,27 @@ function updateResult(){
                     loadHints();
                     updatePagesLink();
                     updateTitleWithTotal();
+
+                    if (_updateFilter === true) {
+                        _updateFilter = false;
+                        loadFilters();
+                        loadingOverlay();
+                    }
+
                 },
                 error: function (result) {/**/
                 }
             });
             break;
         }
-        case 'course':
-        {
+        case 'course': {
             $.ajax({
                 type: "GET",
                 url: "/searchUpdate/course" + location.search,
+                beforeSend: function () {
+                    _updateFilter = true;
+                    loadingOverlay();
+                },
                 success: function (response) {
                     $('.result-list').html("").append(response);
 
@@ -201,17 +241,26 @@ function updateResult(){
                     loadHints();
                     updatePagesLink();
                     updateTitleWithTotal();
+
+                    if (_updateFilter === true) {
+                        _updateFilter = false;
+                        loadFilters();
+                        loadingOverlay();
+                    }
                 },
                 error: function (result) {/**/
                 }
             });
             break;
         }
-        case 'instructor':
-        {
+        case 'instructor': {
             $.ajax({
                 type: "GET",
                 url: "/searchUpdate/instructor" + location.search,
+                beforeSend: function () {
+                    _updateFilter = true;
+                    loadingOverlay();
+                },
                 success: function (response) {
                     $('.result-list').html("").append(response);
 
@@ -219,6 +268,12 @@ function updateResult(){
                     loadHints();
                     updatePagesLink();
                     updateTitleWithTotal();
+
+                    if (_updateFilter === true) {
+                        _updateFilter = false;
+                        loadFilters();
+                        loadingOverlay();
+                    }
                 },
                 error: function (result) {/**/
                 }
@@ -228,10 +283,9 @@ function updateResult(){
     }
 }
 
-function updateUrl()
-{
+function updateUrl() {
     var _querypars = [];
-    for(var key in _GET){
+    for (var key in _GET) {
         //console.log(_GET[key]);
         if (_GET[key] !== 'undefined' && _GET[key].length > 0) {
             /* none get page parame when apply any (new) filter */
@@ -245,12 +299,11 @@ function updateUrl()
     history.replaceState({}, '', newURL);
 }
 
-function updatePagesLink()
-{
-    var newURL =  window.location.search;
+function updatePagesLink() {
+    var newURL = window.location.search;
 
     var _querypars = [];
-    for(var key in _GET){
+    for (var key in _GET) {
         if (_GET[key] !== 'undefined' && _GET[key].length > 0 && key !== 'page') {
             _querypars.push(key + "=" + _GET[key]);
         }
@@ -260,13 +313,13 @@ function updatePagesLink()
     newURL = location.pathname + (_querypars.length > 0 ? ("?") : '') + _querypars.join('&');
 
     if ($('#pagesTop').length > 0) {
-        $('#pagesTop li').each(function(){
+        $('#pagesTop li').each(function () {
             var linkPage = $(this).find("a").attr('href', newURL + (_querypars.length > 0 ? ('&page=' + $(this).index()) : '?page=' + $(this).index() ));
         });
     }
 
     if ($('#pagesBottom').length > 0) {
-        $('#pagesBottom li').each(function(){
+        $('#pagesBottom li').each(function () {
             var linkPage = $(this).find("a").attr('href', newURL + (_querypars.length > 0 ? ('&page=' + $(this).index()) : '?page=' + $(this).index() ));
         });
     }
@@ -278,14 +331,15 @@ function updatePagesLink()
 }
 
 function loadHints() {
-    var notHints = ['activeTAB','perPage','sortBy','page','ActiveTAB','HideHeatherRawTab','HideHeatherRawChoosenFilter','HideHeatherRawSort','HideLeftFilter','HideRightAplhabet']; /* Not display hints which filters on list */
+    var notHints = ['searchKeywordBy', 'activeTAB', 'perPage', 'sortBy', 'page', 'ActiveTAB', 'hideHeatherRawTab', 'hideHeatherRawChoosenFilter', 'hideHeatherRawSort', 'hideLeftFilter', 'hideRightAplhabet'];
+    /* Not display hints which filters on list */
     var notHintsValue = ['any'];
-
+    $("#tips").html("");
     /* Display clear all when exits any valid filters */
     for (var key in _GET) {
 
         //if (_GET[key] !== 'undefined' && _GET[key].length > 0 && notHints.indexOf(key) === -1) {
-        if (_GET[key] !== 'undefined' && _GET[key].length > 0 && notHints.indexOf(key) === -1 ) {
+        if (_GET[key] !== 'undefined' && _GET[key].length > 0 && notHints.indexOf(key) === -1) {
             // if (_GET[key] !== 'any') {
             $("#tips").html("").append('<div class="tips-element">Clear all' +
                 '<div class="close-item" data-key="clear" data-value="all"><span class="close-left"></span><span class="close-right"></span></div></div>');
@@ -301,41 +355,72 @@ function loadHints() {
 
     for (var key in _GET) {
 
-        if (_GET[key] !== 'undefined' && _GET[key].length > 0 && notHints.indexOf(key) === -1 ) {
+        if (_GET[key] !== 'undefined' && _GET[key].length > 0 && notHints.indexOf(key) === -1) {
             filters = _GET[key].split(',');
             if (filters.length > 0) {
 
                 filters.forEach(function (item) {
-                    /* Not display value 'any' on hints */
-                    if (item !== 'any') {
-                        $("#tips").append('<div class="tips-element">' + '(' + key + ')' + item +
+
+                    if (item !== 'any' && key === 'keyword') {
+                        /* Separate the searching keywords */
+                        var split_keyword = item.trim().split(' ');
+                        var _keywords = [];
+
+                        split_keyword.forEach(function (strKeyword) {
+                            if (strKeyword.trim().length > 0) {
+                                $("#tips").append('<div class="tips-element">' + strKeyword +
+                                    '<div class="close-item" data-key="' + key + '" data-value="' + strKeyword + '"><span class="close-left"></span><span class="close-right"></span></div></div>');
+                                _keywords.push(strKeyword);
+                            }
+                        });
+
+                        _GET[key] = _keywords.join(' ');
+                        $('#search-keyword').val(_GET[key]);
+                        updateUrl();
+                    }
+                    else if (item !== 'any') {
+                        /* Not display value 'any' on hints */
+                        $("#tips").append('<div class="tips-element">' + item +
                             '<div class="close-item" data-key="' + key + '" data-value="' + item + '"><span class="close-left"></span><span class="close-right"></span></div></div>');
                     }
+
                 });
             }
-
         }
-
     }
 
     $("#tips .close-item").each(function (index, element) {
-        $(this).on('click', function(e){
+        $(this).on('click', function (e) {
             if (_GET[$(this).attr('data-key')] !== undefined) {
 
-                var _get = removeValueOnArray(_GET[$(this).attr('data-key')].split(','), $(this).attr('data-value') );
-                _GET[$(this).attr('data-key')] = _get.join(',');
+                var _get = null;
+
+                if ($(this).attr('data-key') === 'keyword') {
+                    /* Separate the searching keywords */
+                    _get = removeValueOnArray(_GET[$(this).attr('data-key')].split(' '), $(this).attr('data-value'));
+
+                    /* remove one by one word on keyword */
+                    _get.forEach(function (index, element) {
+                        if (element.length === 0) {
+                            _get.splice(index, 1);
+                        }
+                    });
+                }
+                else {
+                    _get = removeValueOnArray(_GET[$(this).attr('data-key')].split(','), $(this).attr('data-value'));
+                }
+
+                _GET[$(this).attr('data-key')] = _get.join(' ');
 
                 updateUrl();
                 clearFilterFromHints();
                 $(this).parent().remove();
 
-                /* clear group keywor and contain filters */
-                if ($(this).attr('data-key') === 'searchKeywordBy')
-                {
+                /* clear group keyword and contain filters */
+                if ($(this).attr('data-key') === 'searchKeywordBy') {
                     _GET['keyword'] = '';
-                    $("#tips .close-item").each(function (index, element){
-                        if ($(this).attr('data-key') === 'keyword')
-                        {
+                    $("#tips .close-item").each(function (index, element) {
+                        if ($(this).attr('data-key') === 'keyword') {
                             $(this).parent().remove();
                             $(".clear-btn").trigger('click');
                             return;
@@ -344,17 +429,19 @@ function loadHints() {
                     updateUrl();
                     clearFilterFromHints();
                 }
-                else if ($(this).attr('data-key') === 'keyword')
-                {
-                    _GET['searchKeywordBy'] = '';
-                    $("#tips .close-item").each(function (index, element){
-                        if ($(this).attr('data-key') === 'searchKeywordBy')
-                        {
+                else if ($(this).attr('data-key') === 'keyword') {
+                    /* Empty searchKeyWordBy */
+                    _GET['searchKeywordBy'] = (_GET['keyword'] !== undefined ? _GET['searchKeywordBy'] : '');
+                    $("#tips .close-item").each(function (index, element) {
+                        if ($(this).attr('data-key') === 'searchKeywordBy') {
                             $(this).parent().remove();
                             $(".clear-btn").trigger('click');
                             return;
                         }
                     });
+
+                    $('#search-keyword').val(_GET['keyword'] !== undefined ? _GET['keyword'].replace(',', ' ') : '');
+
                     updateUrl();
                     clearFilterFromHints();
                 }
@@ -370,58 +457,57 @@ function loadHints() {
                     }
                 }
 
-                if (  clearLastedHint)
-                {
-                    $("#tips .close-item").each(function (index, element){
+                if (clearLastedHint) {
+                    $("#tips .close-item").each(function (index, element) {
                         $(this).parent().remove();
                     });
                 }
                 /**/
             }
-            else if($(this).attr('data-key') === 'clear'){
+            else if ($(this).attr('data-key') === 'clear') {
 
                 /**** CLEAR ALL HINTS ****/
 
                 /* update url */
-                var newUrl = location.pathname+'?activeTAB='+paths[1];
+                var newUrl = location.pathname + '?activeTAB=' + paths[1];
 
-                if (_GET['HideHeatherRawTab'] !== undefined && _GET['HideHeatherRawTab'].toLowerCase() === 'true') {
-                    newUrl += '&HideHeatherRawTab=TRUE';
+                if (_GET['hideHeatherRawTab'] !== undefined && _GET['hideHeatherRawTab'].toLowerCase() === 'true') {
+                    newUrl += '&hideHeatherRawTab=TRUE';
                 }
 
-                if (_GET['HideHeatherRawChoosenFilter'] !== undefined && _GET['HideHeatherRawChoosenFilter'].toLowerCase() === 'true') {
-                    newUrl += '&HideHeatherRawChoosenFilter=TRUE';
+                if (_GET['hideHeatherRawChoosenFilter'] !== undefined && _GET['hideHeatherRawChoosenFilter'].toLowerCase() === 'true') {
+                    newUrl += '&hideHeatherRawChoosenFilter=TRUE';
                 }
 
-                if (_GET['HideHeatherRawSort'] !== undefined && _GET['HideHeatherRawSort'].toLowerCase() === 'true') {
-                    newUrl += '&HideHeatherRawSort=TRUE';
+                if (_GET['hideHeatherRawSort'] !== undefined && _GET['hideHeatherRawSort'].toLowerCase() === 'true') {
+                    newUrl += '&hideHeatherRawSort=TRUE';
                 }
 
-                if (_GET['HideLeftFilter'] !== undefined && _GET['HideLeftFilter'].toLowerCase() === 'true') {
-                    newUrl += '&HideLeftFilter=TRUE';
+                if (_GET['hideLeftFilter'] !== undefined && _GET['hideLeftFilter'].toLowerCase() === 'true') {
+                    newUrl += '&hideLeftFilter=TRUE';
                 }
 
-                if (_GET['HideRightAplhabet'] !== undefined && _GET['HideRightAplhabet'].toLowerCase() === 'true') {
-                    newUrl += '&HideRightAplhabet=TRUE';
+                if (_GET['hideRightAplhabet'] !== undefined && _GET['hideRightAplhabet'].toLowerCase() === 'true') {
+                    newUrl += '&hideRightAplhabet=TRUE';
                 }
 
                 /* update url when clear all hints */
                 history.replaceState({}, '', newUrl);
 
                 /* remove all hints */
-                $("#tips .close-item").each(function(){
+                $("#tips .close-item").each(function () {
                     $(this).parent().remove();
                 });
 
                 /* restore default filters */
-                $('input[type="checkbox"]').each(function(){
+                $('input[type="checkbox"]').each(function () {
                     if ($(this).attr('value') !== 'any')
-                        $(this).prop('checked',false);
+                        $(this).prop('checked', false);
                     else
-                        $(this).prop('checked',true);
+                        $(this).prop('checked', true);
                 });
 
-                $("select").each(function(){
+                $("select").each(function () {
                     if ($(this).attr('id') !== 'perPage' && $(this).attr('id') !== 'sort') {
                         $(this).val('any');
                     }
@@ -436,24 +522,21 @@ function loadHints() {
             }
 
             _GET = queryString();
-            updateResult();
+
+            loadReady();
         });
     });
 }
 
-function removeValueOnArray(_array, value)
-{
-    for(_item in _array)
-    {
-        if (_array[_item] === value)
-        {
-            _array.splice(_item,1);
+function removeValueOnArray(_array, value) {
+    for (_item in _array) {
+        if (_array[_item] === value) {
+            _array.splice(_item, 1);
             break;
         }
     }
     return _array;
 }
-
 
 function clearFilterFromHints() {
     _GET = queryString();
@@ -477,7 +560,7 @@ function clearFilterFromHints() {
         });
     }
     else {
-        $('ul#freeTrial li').find('input.checkbox-default').first().prop("checked",true);
+        $('ul#freeTrial li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#classAvailable li').each(function (index, element) {
@@ -499,7 +582,7 @@ function clearFilterFromHints() {
         });
     }
     else {
-        $('ul#classAvailable li').find('input.checkbox-default').first().prop("checked",true);
+        $('ul#classAvailable li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#country li').each(function (index, element) {
@@ -521,7 +604,7 @@ function clearFilterFromHints() {
         });
     }
     else {
-        $('ul#country li').find('input.checkbox-default').first().prop("checked",true);
+        $('ul#country li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#city li').each(function (index, element) {
@@ -539,9 +622,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#city li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#city li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#location li').each(function (index, element) {
@@ -559,9 +641,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#location li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#location li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#activityType li').each(function (index, element) {
@@ -579,9 +660,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#activityType li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#activityType li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#activity li').each(function (index, element) {
@@ -599,9 +679,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#activity li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#activity li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#activityClassification li').each(function (index, element) {
@@ -619,9 +698,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#activityClassification li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#activityClassification li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#eventType li').each(function (index, element) {
@@ -639,9 +717,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#eventType li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#eventType li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#facility li').each(function (index, element) {
@@ -659,9 +736,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#facility li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#facility li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#campus li').each(function (index, element) {
@@ -679,9 +755,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#campus li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#campus li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#arena li').each(function (index, element) {
@@ -699,9 +774,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#arena li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#arena li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#provider li').each(function (index, element) {
@@ -719,9 +793,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#provider li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#provider li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#instructor li').each(function (index, element) {
@@ -739,9 +812,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#instructor li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#instructor li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#program li').each(function (index, element) {
@@ -759,9 +831,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#program li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#program li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#day li').each(function (index, element) {
@@ -779,9 +850,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#day li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#day li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#gender li').each(function (index, element) {
@@ -799,9 +869,8 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#gender li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#gender li').find('input.checkbox-default').first().prop("checked", true);
     }
 
     $('ul#generation li').each(function (index, element) {
@@ -819,13 +888,12 @@ function clearFilterFromHints() {
             });
         });
     }
-    else
-    {
-        $('ul#generation li').find('input.checkbox-default').first().prop("checked",true);
+    else {
+        $('ul#generation li').find('input.checkbox-default').first().prop("checked", true);
     }
 }
 
-function SelectAlpha(){
+function SelectAlpha() {
     if ($('.alpha-filter').length > 0) {
         var liIndex;
 
@@ -874,26 +942,26 @@ function SelectAlpha(){
 
             updateUrl();
             updateResult();
+
         });
 
     }
 }
 
-function TipsResize(){
-    $('.tips-area').change(function(){
+function TipsResize() {
+    $('.tips-area').change(function () {
         alert($('.tips-area').alert());
     });
 }
 
-function loadSort()
-{
+function loadSort() {
     if ($('#sort').length > 0) {
 
         /* pre-select filter items */
         if (_GET['sortBy'] !== undefined) {
             $('#sort').val(_GET['sortBy']);
         }
-        if (_GET['searchKeywordBy'] !== undefined) {
+        if (_GET['searchKeywordBy'] !== undefined && _GET.keyword !== undefined) {
             var seletedkeyword = _GET.keyword.split(',');
             seletedkeyword.forEach(function (value) {
                 $('select#sort option').each(function (index, element) {
@@ -916,12 +984,12 @@ function loadSort()
             }
             updateUrl();
             updateResult();
+
         });
     }
 }
 
-function loadPerPage()
-{
+function loadPerPage() {
     if ($('#perPage').length > 0) {
 
         /* pre-select filter items */
@@ -951,146 +1019,195 @@ function loadPerPage()
             }
             updateUrl();
             updateResult();
+
         });
     }
 }
 
 function loadFreeTrial() {
     if ($('#freeTrial').length > 0) {
+        $.ajax({
+            type: "GET",
+            url: "/filter/freeTrial",
+            data: window.location.search.substr(1, window.location.search.length),
+            success: function (data) {
+                var len = data.length;
+                $('ul#freeTrial').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
 
-        /* pre-select filter items */
-        if (_GET['freeTrial'] !== undefined) {
-            var seletedfreeTrial = _GET.freeTrial.split(',');
-            if (seletedfreeTrial.length > 0)
-            {
-                $('ul#freeTrial li').first().find('input.checkbox-default').prop("checked", false);
-            }
-            seletedfreeTrial.forEach(function (value) {
-                $('ul#freeTrial li').each(function (index, element) {
-                    var input = $(this).find('input.checkbox-default');
-                    if (input.val() === value) {
-                        input.attr("checked","true");
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#freeTrial').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
+                }
+                $('ul#freeTrial li').first().find('lable span').text('Any (' + total + ')');
+
+                /* pre-select filter items */
+                if (_GET['freeTrial'] !== undefined) {
+                    var seletedfreeTrial = _GET.freeTrial.split(',');
+                    if (seletedfreeTrial.length > 0) {
+                        $('ul#freeTrial li').first().find('input.checkbox-default').prop("checked", false);
                     }
+                    seletedfreeTrial.forEach(function (value) {
+                        $('ul#freeTrial li').each(function (index, element) {
+                            var input = $(this).find('input.checkbox-default');
+                            if (input.val() === value) {
+                                input.attr("checked", "true");
+                            }
+                        });
+                    });
+                }
+
+                /* pre-select filter items */
+                if (_GET['freeTrial'] !== undefined) {
+                    var seletedfreeTrial = _GET.freeTrial.split(',');
+                    if (seletedfreeTrial.length > 0 && _GET.freeTrial.length > 0) {
+                        $('ul#freeTrial li').first().find('input.checkbox-default').prop("checked", false);
+                    }
+                    seletedfreeTrial.forEach(function (value) {
+                        $('ul#freeTrial li').each(function (index, element) {
+                            var input = $(this).first().find('input.checkbox-default');
+                            if (input.val() === value) {
+                                input.prop("checked", true);
+                            }
+                        });
+                    });
+                }
+
+                /* Update result when any item selected */
+                $('ul#freeTrial li').each(function (index, element) {
+
+                    var liIndex = index;
+                    $(element).find('input.checkbox-default').click(function () {
+                        /* select others except 'any item' */
+                        if (liIndex > 0 && $(this).is(":checked")) {
+                            var anyCheck = $('ul#freeTrial li').first().find('input.checkbox-default');
+                            anyCheck.prop("checked", false);
+                        }
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#freeTrial li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
+                            });
+                            $('ul#freeTrial li:first-child').find('input.checkbox-default').prop("checked", true);
+                        }
+                        /**/
+                        if ($(this).is(":checked")) {
+                            var seletedItem = '';
+                            /* Collect all selected filter item */
+                            $('ul#freeTrial li').each(function (index, element) {
+                                var input = $(this).find('input.checkbox-default');
+                                if ($(this).index() !== liIndex && input.is(":checked")) {
+                                    seletedItem += (seletedItem.length > 0 ? ',' : "" ) + input.val();
+                                }
+                            });
+                            seletedItem += (seletedItem.length > 0 ? ',' : "" ) + $(this).val();
+                            _GET.freeTrial = seletedItem;
+                        }
+                        else {
+                            var _get = removeValueOnArray(_GET.freeTrial.split(','), $(this).val());
+                            _GET.freeTrial = ( _get.join(',') ? _get.join(',') : '');
+                            console.log(_GET.freeTrial);
+
+                            if (_get.length === 0) {
+                                $('ul#freeTrial li').find('input.checkbox-default').first().prop("checked", true);
+                            }
+                        }
+                        _updateFilter = true;
+                        updateUrl();
+                        updateResult();
+
+                    });
                 });
-            });
-        }
-
-        /* Update result when any item selected */
-        $('ul#freeTrial li').each(function (index, element) {
-
-            var liIndex = index;
-            $(element).find('input.checkbox-default').click(function () {
-                /* select others except 'any item' */
-                if (liIndex > 0 && $(this).is(":checked")) {
-                    var anyCheck = $('ul#freeTrial li').first().find('input.checkbox-default');
-                    anyCheck.prop("checked", false);
-                }
-                else if (liIndex === 0 && $(this).is(":checked"))
-                {
-                    $('ul#freeTrial li').each( function(){
-                        $(this).find('input.checkbox-default').prop("checked",false);
-                    });
-                    $('ul#freeTrial li:first-child').find('input.checkbox-default').prop("checked",true);
-                }
-                /**/
-                if ($(this).is(":checked")) {
-                    var seletedItem = '';
-                    /* Collect all selected filter item */
-                    $('ul#freeTrial li').each(function (index, element) {
-                        var input = $(this).find('input.checkbox-default');
-                        if ($(this).index() !== liIndex && input.is(":checked")) {
-                            seletedItem += (seletedItem.length > 0 ? ',' : "" ) + input.val();
-                        }
-                    });
-                    seletedItem += (seletedItem.length > 0 ? ',' : "" ) + $(this).val();
-                    _GET.freeTrial = seletedItem;
-                }
-                else {
-                    var deSeletedItem = '';
-
-                    $('.ul#freeTrial li').each(function (index, element) {
-                        var input = $(this).find('input.checkbox-default');
-
-                        if (input.is(":checked")) {
-                            deSeletedItem += (deSeletedItem.length > 0 ? ',' : "" ) + input.val();
-                        }
-                    });
-                    _GET.freeTrial = deSeletedItem;
-                }
-
-                updateUrl();
-                updateResult();
-            });
+            },
+            error: function (result) {/**/
+            }
         });
-
     }
 }
 
-function loadClassAvailable(){
+function loadClassAvailable() {
     if ($('#classAvailable').length > 0) {
 
-        /* pre-select filter items */
-        if (_GET['classAvailable'] !== undefined) {
-            var seletedclassAvailable = _GET.classAvailable.split(',');
-            if (seletedclassAvailable.length > 0)
-            {
-                $('ul#classAvailable li').first().find('input.checkbox-default').prop("checked", false);
-            }
-            seletedclassAvailable.forEach(function (value) {
+        $.ajax({
+            type: "GET",
+            url: "/filter/classAvailable",
+            data: window.location.search.substr(1, window.location.search.length),
+            success: function (data) {
+                var len = data.length;
+                $('ul#classAvailable').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#classAvailable').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'].toLowerCase() + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
+                }
+                $('ul#classAvailable li').first().find('lable span').text('Any (' + total + ')');
+
+                /* pre-select filter items */
+                if (_GET['classAvailable'] !== undefined) {
+                    var seletedclassAvailable = _GET.classAvailable.split(',');
+                    if (seletedclassAvailable.length > 0 && _GET.classAvailable.length > 0) {
+                        $('ul#classAvailable li').first().find('input.checkbox-default').prop("checked", false);
+                    }
+                    seletedclassAvailable.forEach(function (value) {
+                        $('ul#classAvailable li').each(function (index, element) {
+                            var input = $(this).first().find('input.checkbox-default');
+                            if (input.val() === value) {
+                                input.prop("checked", true);
+                            }
+                        });
+                    });
+                }
+
+                /* Update result when any item selected */
                 $('ul#classAvailable li').each(function (index, element) {
-                    var input = $(this).find('input.checkbox-default');
-                    if (input.val() === value) {
-                        input.attr("checked", "true");
-                    }
-                });
-            });
-        }
 
-        /* Update result when any item selected */
-        $('ul#classAvailable li').each(function (index, element) {
-
-            var liIndex = index;
-            $(element).find('input.checkbox-default').click(function () {
-                /* select others except 'any item' */
-                if (liIndex > 0 && $(this).is(":checked")) {
-                    var anyCheck = $('ul#classAvailable li').first().find('input.checkbox-default');
-                    anyCheck.prop("checked", false);
-                }
-                else if (liIndex === 0 && $(this).is(":checked"))
-                {
-                    $('ul#classAvailable li').each( function(){
-                        $(this).find('input.checkbox-default').prop("checked",false);
-                    });
-                    $('ul#classAvailable li:first-child').find('input.checkbox-default').prop("checked",true);
-                }
-                /**/
-                if ($(this).is(":checked")) {
-                    var seletedItem = '';
-                    /* Collect all selected filter item */
-                    $('ul#classAvailable li').each(function (index, element) {
-                        var input = $(this).find('input.checkbox-default');
-
-                        if ($(this).index() !== liIndex && input.is(":checked") && input.val() !== 'any') {
-                            seletedItem += (seletedItem.length > 0 ? ',' : "" ) + input.val();
+                    var liIndex = index;
+                    $(element).find('input.checkbox-default').click(function () {
+                        /* select others except 'any item' */
+                        if (liIndex > 0 && $(this).is(":checked")) {
+                            var anyCheck = $('ul#classAvailable li').first().find('input.checkbox-default');
+                            anyCheck.prop("checked", false);
                         }
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#classAvailable li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
+                            });
+                            $('ul#classAvailable li:first-child').find('input.checkbox-default').prop("checked", true);
+                        }
+                        /**/
+                        if ($(this).is(":checked")) {
+                            var seletedItem = '';
+                            /* Collect all selected filter item */
+                            $('ul#classAvailable li').each(function (index, element) {
+                                var input = $(this).find('input.checkbox-default');
+                                if ($(this).index() !== liIndex && input.is(":checked")) {
+                                    seletedItem += (seletedItem.length > 0 ? ',' : "" ) + input.val();
+                                }
+                            });
+                            seletedItem += (seletedItem.length > 0 ? ',' : "" ) + $(this).val();
+                            _GET.classAvailable = seletedItem;
+                        }
+                        else {
+                            var _get = removeValueOnArray(_GET.classAvailable.split(','), $(this).val());
+                            _GET.classAvailable = ( _get.join(',') ? _get.join(',') : '');
+                            console.log(_GET.classAvailable);
+
+                            if (_get.length === 0) {
+                                $('ul#classAvailable li').find('input.checkbox-default').first().prop("checked", true);
+                            }
+                        }
+                        _updateFilter = true;
+                        updateUrl();
+                        updateResult();
+
                     });
-                    seletedItem += (seletedItem.length > 0 ? ',' : "" ) + $(this).val();
-                    _GET.classAvailable = seletedItem;
-                }
-                else {
-                    var _get = removeValueOnArray(_GET.classAvailable.split(','), $(this).val() );
-                    _GET.classAvailable = _get.join(',');
-
-                    if (_get.length === 0) {
-                        $('ul#classAvailable li').find('input.checkbox-default').first().prop("checked", true);
-                    }
-                }
-
-                updateUrl();
-                updateResult();
-            });
+                });
+            },
+            error: function (result) {/**/
+            }
         });
-
     }
 }
 
@@ -1100,19 +1217,25 @@ function loadCountry() {
         $.ajax({
             type: "GET",
             url: "/filter/country",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
                 var len = data.length;
 
+                $('ul#country').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
                 for (var i = 0; i < len; i++) {
-                    //alert(data[i]['country_id']);
-                    $('#country').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                    if (data[i]['counter'] === 0) continue;
+                    $('#country').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable> <span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#country li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['country'] !== undefined) {
                     var seletedcountry = _GET.country.split(',');
-                    if (seletedcountry.length > 0)
-                    {
+                    //console.log(seletedcountry);
+                    if (seletedcountry.length > 0 && _GET.country.length > 0) {
                         $('ul#country li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedcountry.forEach(function (value) {
@@ -1123,6 +1246,7 @@ function loadCountry() {
                             }
                         });
                     });
+                    loadCity(_GET['country']);
                 }
 
                 /* Update result when any item selected */
@@ -1136,12 +1260,11 @@ function loadCountry() {
                             anyCheck.prop("checked", false);
 
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#country li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#country li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#country li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#country li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
                         if ($(this).is(":checked")) {
@@ -1157,7 +1280,7 @@ function loadCountry() {
                             _GET.country = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.country.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.country.split(','), $(this).val());
                             _GET.country = _get.join(',');
 
                             if (_get.length === 0) {
@@ -1165,8 +1288,11 @@ function loadCountry() {
                             }
                         }
 
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
+                        loadCity(_GET['country']);
                     });
                 });
             },
@@ -1176,56 +1302,60 @@ function loadCountry() {
     }
 }
 
-function loadCity() {
+function loadCity(country) {
     if ($('#city').length > 0) {
+
         $.ajax({
             type: "GET",
             url: "/filter/city",
+            data: window.location.search.substr(1, window.location.search.length) + ( _GET['country'] != null ? '' : "&country=" + country),
             success: function (data) {
-                var len =  data.length;
+                var len = data.length;
 
-                for(var i=0;i<len;i++ ){
-                    $('#city').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                $('ul#city').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#city').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable> <span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#city li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['city'] !== undefined) {
                     var seletedcity = _GET.city.split(',');
-                    if (seletedcity.length > 0)
-                    {
-                        $('ul#seletedcity li').first().find('input.checkbox-default').prop("checked", false);
+                    if (seletedcity.length > 0 && _GET.city.length > 0) {
+                        $('ul#city li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedcity.forEach(function (value) {
                         $('ul#city li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
+                    loadLocation(_GET['city']);
                 }
 
                 /* Update result when any item selected */
                 $('ul#city li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
-                            var anyCheck = $('ul#city li').first().find('input.checkbox-default');
-                            anyCheck.prop("checked", false);
-
+                            $('ul#city li').first().find('input.checkbox-default').prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#city li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#city li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#city li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#city li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#city li').each(function (index, element) {
@@ -1238,7 +1368,7 @@ function loadCity() {
                             _GET.city = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.city.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.city.split(','), $(this).val());
                             _GET.city = _get.join(',');
 
                             if (_get.length === 0) {
@@ -1246,8 +1376,11 @@ function loadCity() {
                             }
                         }
 
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
+                        loadLocation(_GET['city']);
                     });
                 });
             },
@@ -1257,29 +1390,36 @@ function loadCity() {
     }
 }
 
-function loadLocation() {
+function loadLocation(city) {
     if ($('#location').length > 0) {
         $.ajax({
             type: "GET",
             url: "/filter/location",
+            data: window.location.search.substr(1, window.location.search.length) +
+            (_GET['city'] !== null ? '' : "&city=" + city),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#location').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#location').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#location').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#location li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['location'] !== undefined) {
                     var seletedlocation = _GET.location.split(',');
-                    if (seletedlocation.length > 0)
-                    {
+                    if (seletedlocation.length > 0 && _GET.location.length > 0) {
                         $('ul#location li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedlocation.forEach(function (value) {
                         $('ul#location li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -1289,23 +1429,20 @@ function loadLocation() {
                 $('ul#location li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#location li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
-
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#location li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#location li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#location li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#location li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#location li').each(function (index, element) {
@@ -1318,16 +1455,17 @@ function loadLocation() {
                             _GET.location = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.location.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.location.split(','), $(this).val());
                             _GET.location = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#location li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -1342,60 +1480,54 @@ function loadActivityType() {
         $.ajax({
             type: "GET",
             url: "/filter/activityType",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#activityType').append('<li class="activityType"><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#activityType').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#activityType').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#activityType li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['activityType'] !== undefined) {
                     var seletedactivityType = _GET.activityType.split(',');
-                    if (seletedactivityType.length > 0)
-                    {
+                    if (seletedactivityType.length > 0 && _GET.activityType.length > 0) {
                         $('ul#activityType li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedactivityType.forEach(function (value) {
                         $('ul#activityType li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
-                                loadActivityClassification(value);
+                                input.prop("checked", true);
                             }
                         });
                     });
+                    loadActivityClassification(_GET['activityType']);
                 }
-
-                /* loadActivityClassification by selected activityType */
-                $('ul#activityType li').each(function (index, element) {
-                    $(element).find('input.checkbox-default').click(function() {
-                        if($(this).is(":checked"))
-                        {
-                            loadActivityClassification($(this).val());
-                        }
-                    });
-                });
 
                 /* Update result when any item selected */
                 $('ul#activityType li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#activityType li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#activityType li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#activityType li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#activityType li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#activityType li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#activityType li').each(function (index, element) {
@@ -1408,16 +1540,18 @@ function loadActivityType() {
                             _GET.activityType = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.activityType.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.activityType.split(','), $(this).val());
                             _GET.activityType = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#activityType li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
+                        loadActivityClassification(_GET['activityType']);
                     });
                 });
             },
@@ -1432,62 +1566,56 @@ function loadActivityClassification(activityType) {
         $.ajax({
             type: "GET",
             url: "/filter/activityClassification",
-            data: "activityType=" + activityType,
+            data: window.location.search.substr(1, window.location.search.length) +
+            (_GET['activityType'] !== null ? '' : "&activityType=" + activityType),
             success: function (data) {
                 var len = data.length;
-                if (len > 0) $('ul#activityClassification').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+                $('ul#activityClassification').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
 
+                var total = 0;
                 for (var i = 0; i < len; i++) {
-                    $('ul#activityClassification').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                    if (data[i]['counter'] === 0) continue;
+                    $('#activityClassification').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span> ' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#activityClassification li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['activityClassification'] !== undefined) {
                     var seletedactivityClassification = _GET.activityClassification.split(',');
-                    if (seletedactivityClassification.length > 0)
-                    {
+                    if (seletedactivityClassification.length > 0 && _GET.activityClassification.length > 0) {
                         $('ul#activityClassification li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedactivityClassification.forEach(function (value) {
                         $('ul#activityClassification li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
-                                loadActivity(value);
+                                input.prop("checked", true);
+
                             }
                         });
                     });
+                    loadActivity(_GET['activityClassification']);
                 }
-
-                $('ul#activityClassification li').each(function (index, element) {
-                    $(element).find('input.checkbox-default').click(function() {
-                        if($(this).is(":checked"))
-                        {
-                            loadActivity($(this).val());
-                        }
-                    });
-                });
 
                 /* Update result when any item selected */
                 $('ul#activityClassification li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#activityClassification li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#activityClassification li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#activityClassification li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#activityClassification li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#activityClassification li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#activityClassification li').each(function (index, element) {
@@ -1500,16 +1628,18 @@ function loadActivityClassification(activityType) {
                             _GET.activityClassification = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.activityClassification.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.activityClassification.split(','), $(this).val());
                             _GET.activityClassification = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#activityClassification li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
+                        loadActivity(_GET['activityClassification']);
                     });
                 });
             },
@@ -1524,27 +1654,31 @@ function loadActivity(activityClassification) {
         $.ajax({
             type: "GET",
             url: "/filter/activity",
-            data: "activityClassification=" + activityClassification,
+            data: window.location.search.substr(1, window.location.search.length) +
+            (_GET['activityClassification'] !== null ? '' : "&activityClassification=" + activityClassification),
             success: function (data) {
                 var len = data.length;
-                if (len > 0) $('ul#activity').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+                $('ul#activity').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
 
+                var total = 0;
                 for (var i = 0; i < len; i++) {
-                    $('ul#activity').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                    if (data[i]['counter'] === 0) continue;
+                    $('#activity').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span> ' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#activity li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['activity'] !== undefined) {
                     var seletedactivity = _GET.activity.split(',');
-                    if (seletedactivity.length > 0)
-                    {
+                    if (seletedactivity.length > 0 && _GET.activity.length > 0) {
                         $('ul#activity li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedactivity.forEach(function (value) {
                         $('ul#activity li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -1554,22 +1688,20 @@ function loadActivity(activityClassification) {
                 $('ul#activity li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#activity li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#activity li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#activity li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#activity li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#activity li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#activity li').each(function (index, element) {
@@ -1582,14 +1714,14 @@ function loadActivity(activityClassification) {
                             _GET.activity = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.activity.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.activity.split(','), $(this).val());
                             _GET.activity = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#activity li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
                     });
@@ -1604,24 +1736,30 @@ function loadEventType() {
         $.ajax({
             type: "GET",
             url: "/filter/eventType",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#eventType').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#eventType').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#eventType').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span> ' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#eventType li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['eventType'] !== undefined) {
                     var seletedeventType = _GET.eventType.split(',');
-                    if (seletedeventType.length > 0)
-                    {
+                    if (seletedeventType.length > 0 && _GET.eventType.length > 0) {
                         $('ul#eventType li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedeventType.forEach(function (value) {
                         $('ul#eventType li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -1631,22 +1769,20 @@ function loadEventType() {
                 $('ul#eventType li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#eventType li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#eventType li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#eventType li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#eventType li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#eventType li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#eventType li').each(function (index, element) {
@@ -1659,14 +1795,14 @@ function loadEventType() {
                             _GET.eventType = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.eventType.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.eventType.split(','), $(this).val());
                             _GET.eventType = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#eventType li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
                     });
@@ -1683,49 +1819,54 @@ function loadFacility() {
         $.ajax({
             type: "GET",
             url: "/filter/facility",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#facility').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#facility').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#facility').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#facility li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['facility'] !== undefined) {
                     var seletedfacility = _GET.facility.split(',');
-                    if (seletedfacility.length > 0)
-                    {
+                    if (seletedfacility.length > 0 && _GET.facility.length > 0) {
                         $('ul#facility li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedfacility.forEach(function (value) {
                         $('ul#facility li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
+                    loadCampus(_GET['facility']);
                 }
 
                 /* Update result when any item selected */
                 $('ul#facility li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#facility li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#facility li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#facility li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#facility li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#facility li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#facility li').each(function (index, element) {
@@ -1738,16 +1879,18 @@ function loadFacility() {
                             _GET.facility = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.facility.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.facility.split(','), $(this).val());
                             _GET.facility = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#facility li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
+                        loadCampus(_GET['facility']);
                     });
                 });
             },
@@ -1757,54 +1900,61 @@ function loadFacility() {
     }
 }
 
-function loadCampus() {
+function loadCampus(facility) {
     if ($('#campus').length > 0) {
         $.ajax({
             type: "GET",
             url: "/filter/campus",
+            data: window.location.search.substr(1, window.location.search.length) +
+            (_GET['facility'] !== null ? '' : "&facility=" + facility),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#campus').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#campus').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#campus').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#campus li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['campus'] !== undefined) {
                     var seletedcampus = _GET.campus.split(',');
-                    if (seletedcampus.length > 0)
-                    {
+                    if (seletedcampus.length > 0 && _GET.campus.length > 0) {
                         $('ul#campus li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedcampus.forEach(function (value) {
                         $('ul#campus li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
+
+                    loadArena(_GET['campus']);
                 }
 
                 /* Update result when any item selected */
                 $('ul#campus li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#campus li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#campus li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#campus li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#campus li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#campus li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#campus li').each(function (index, element) {
@@ -1817,16 +1967,18 @@ function loadCampus() {
                             _GET.campus = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.campus.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.campus.split(','), $(this).val());
                             _GET.campus = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#campus li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
+                        loadArena(_GET['campus']);
                     });
                 });
             },
@@ -1836,29 +1988,37 @@ function loadCampus() {
     }
 }
 
-function loadArena() {
+function loadArena(campus) {
     if ($('#arena').length > 0) {
         $.ajax({
             type: "GET",
             url: "/filter/arena",
+            data: window.location.search.substr(1, window.location.search.length) +
+            (_GET['campus'] !== null ? '' : "&campus=" + campus),
+
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#arena').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#arena').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#arena').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#arena li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['arena'] !== undefined) {
                     var seletedarena = _GET.arena.split(',');
-                    if (seletedarena.length > 0)
-                    {
+                    if (seletedarena.length > 0 && _GET.arena.length > 0) {
                         $('ul#arena li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedarena.forEach(function (value) {
                         $('ul#arena li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -1868,22 +2028,20 @@ function loadArena() {
                 $('ul#arena li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#arena li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#arena li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#arena li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#arena li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#arena li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#arena li').each(function (index, element) {
@@ -1896,16 +2054,17 @@ function loadArena() {
                             _GET.arena = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.arena.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.arena.split(','), $(this).val());
                             _GET.arena = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#arena li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -1920,24 +2079,31 @@ function loadProvider() {
         $.ajax({
             type: "GET",
             url: "/filter/provider",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#provider').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['provider_name'] + '" class="checkbox-default"><lable><span>' + data[i]['entity_name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#provider').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#provider').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span> ' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#provider li').first().find('lable span').text('Any (' + total + ')');
+
 
                 /* pre-select filter items */
                 if (_GET['provider'] !== undefined) {
                     var seletedprovider = _GET.provider.split(',');
-                    if (seletedprovider.length > 0)
-                    {
+                    if (seletedprovider.length > 0 && _GET.provider > 0) {
                         $('ul#provider li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedprovider.forEach(function (value) {
                         $('ul#provider li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -1947,23 +2113,21 @@ function loadProvider() {
                 $('ul#provider li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#provider li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#provider li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#provider li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#provider li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#provider li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
 
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#provider li').each(function (index, element) {
@@ -1976,16 +2140,17 @@ function loadProvider() {
                             _GET.provider = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.provider.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.provider.split(','), $(this).val());
                             _GET.provider = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#provider li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -2000,24 +2165,30 @@ function loadInstructor() {
         $.ajax({
             type: "GET",
             url: "/filter/instructor",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#instructor').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['first_name'] + " " + data[i]['last_name'] + '" class="checkbox-default"><lable><span>' + data[i]['first_name'] + " " + data[i]['middle_name'] + " " + data[i]['last_name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#instructor').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#instructor').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['first_name'] + " " + data[i]['last_name'] + '" class="checkbox-default"><lable><span>' + data[i]['first_name'] + " " + data[i]['middle_name'] + " " + data[i]['last_name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#instructor li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['instructor'] !== undefined) {
                     var seletedinstructor = _GET.instructor.split(',');
-                    if (seletedinstructor.length > 0)
-                    {
+                    if (seletedinstructor.length > 0 && _GET.instructor.length > 0) {
                         $('ul#instructor li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedinstructor.forEach(function (value) {
                         $('ul#instructor li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -2027,23 +2198,20 @@ function loadInstructor() {
                 $('ul#instructor li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#instructor li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
-
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#instructor li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#instructor li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#instructor li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#instructor li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#instructor li').each(function (index, element) {
@@ -2056,16 +2224,17 @@ function loadInstructor() {
                             _GET.instructor = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.instructor.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.instructor.split(','), $(this).val());
                             _GET.instructor = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#instructor li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -2080,24 +2249,31 @@ function loadProgram() {
         $.ajax({
             type: "GET",
             url: "/filter/program",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#program').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#program').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#program').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#program li').first().find('lable span').text('Any (' + total + ')');
+
 
                 /* pre-select filter items */
                 if (_GET['program'] !== undefined) {
                     var seletedprogram = _GET.program.split(',');
-                    if (seletedprogram.length > 0)
-                    {
+                    if (seletedprogram.length > 0 && _GET.program.length > 0) {
                         $('ul#program li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedprogram.forEach(function (value) {
                         $('ul#program li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -2107,22 +2283,20 @@ function loadProgram() {
                 $('ul#program li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#program li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#program li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#program li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#program li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#program li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#program li').each(function (index, element) {
@@ -2135,16 +2309,17 @@ function loadProgram() {
                             _GET.program = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.program.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.program.split(','), $(this).val());
                             _GET.program = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#program li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -2159,24 +2334,31 @@ function loadDay() {
         $.ajax({
             type: "GET",
             url: "/filter/day",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
-                for(var i=0;i<len;i++ ){
-                    $('#day').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var len = data.length;
+                $('ul#day').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
+
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#day').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#day li').first().find('lable span').text('Any (' + total + ')');
+
 
                 /* pre-select filter items */
                 if (_GET['day'] !== undefined) {
                     var seletedDay = _GET.day.split(',');
-                    if (seletedDay.length > 0)
-                    {
+                    if (seletedDay.length > 0 && _GET.day.length > 0) {
                         $('ul#day li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedDay.forEach(function (value) {
                         $('ul#day li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -2186,22 +2368,20 @@ function loadDay() {
                 $('ul#day li').each(function (index, element) {
 
                     var liIndex = index;
-                    $(element).find('input.checkbox-default').click(function() {
+                    $(element).find('input.checkbox-default').click(function () {
                         /* select others except 'any item' */
                         if (liIndex > 0 && $(this).is(":checked")) {
                             var anyCheck = $('ul#day li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#day li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#day li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#day li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#day li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
-                        if($(this).is(":checked"))
-                        {
+                        if ($(this).is(":checked")) {
                             var seletedItem = '';
                             /* Collect all selected filter item */
                             $('ul#day li').each(function (index, element) {
@@ -2214,16 +2394,17 @@ function loadDay() {
                             _GET.day = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.day.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.day.split(','), $(this).val());
                             _GET.day = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#day li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -2239,25 +2420,30 @@ function loadGender() {
         $.ajax({
             type: "GET",
             url: "/filter/gender",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
+                var len = data.length;
+                $('ul#gender').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
 
-                for(var i=0;i<len;i++ ){
-                    $('#gender').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#gender').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#gender li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['gender'] !== undefined) {
                     var seletedgender = _GET.gender.split(',');
-                    if (seletedgender.length > 0)
-                    {
+                    if (seletedgender.length > 0 && _GET.gender > 0) {
                         $('ul#gender li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedgender.forEach(function (value) {
                         $('ul#gender li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -2273,12 +2459,11 @@ function loadGender() {
                             var anyCheck = $('ul#gender li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#gender li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#gender li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#gender li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#gender li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
                         if ($(this).is(":checked")) {
@@ -2294,16 +2479,17 @@ function loadGender() {
                             _GET.gender = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.gender.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.gender.split(','), $(this).val());
                             _GET.gender = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#gender li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -2319,25 +2505,30 @@ function loadGeneration() {
         $.ajax({
             type: "GET",
             url: "/filter/generation",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
+                var len = data.length;
+                $('ul#generation').html("").append('<li><input name="checkresult" value="any" checked="" class="checkbox-default" type="checkbox"><lable><span>Any</span></lable></li>');
 
-                for(var i=0;i<len;i++ ){
-                    $('#generation').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + '</span></lable></li>')
+                var total = 0;
+                for (var i = 0; i < len; i++) {
+                    if (data[i]['counter'] === 0) continue;
+                    $('#generation').append('<li><input type="checkbox" name="checkresult" value="' + data[i]['name'] + '" class="checkbox-default"><lable><span>' + data[i]['name'] + ' (' + data[i]['counter'] + ')' + '</span></lable></li>')
+                    total += parseInt(data[i]['counter']);
                 }
+                $('ul#generation li').first().find('lable span').text('Any (' + total + ')');
 
                 /* pre-select filter items */
                 if (_GET['generation'] !== undefined) {
                     var seletedgeneration = _GET.generation.split(',');
-                    if (seletedgeneration.length > 0)
-                    {
+                    if (seletedgeneration.length > 0 && _GET.generation.length > 0) {
                         $('ul#generation li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedgeneration.forEach(function (value) {
                         $('ul#generation li').each(function (index, element) {
                             var input = $(this).find('input.checkbox-default');
                             if (input.val() === value) {
-                                input.attr("checked","true");
+                                input.prop("checked", true);
                             }
                         });
                     });
@@ -2353,12 +2544,11 @@ function loadGeneration() {
                             var anyCheck = $('ul#generation li').first().find('input.checkbox-default');
                             anyCheck.prop("checked", false);
                         }
-                        else if (liIndex === 0 && $(this).is(":checked"))
-                        {
-                            $('ul#generation li').each( function(){
-                                $(this).find('input.checkbox-default').prop("checked",false);
+                        else if (liIndex === 0 && $(this).is(":checked")) {
+                            $('ul#generation li').each(function () {
+                                $(this).find('input.checkbox-default').prop("checked", false);
                             });
-                            $('ul#generation li:first-child').find('input.checkbox-default').prop("checked",true);
+                            $('ul#generation li:first-child').find('input.checkbox-default').prop("checked", true);
                         }
                         /**/
                         if ($(this).is(":checked")) {
@@ -2374,16 +2564,17 @@ function loadGeneration() {
                             _GET.generation = seletedItem;
                         }
                         else {
-                            var _get = removeValueOnArray(_GET.generation.split(','), $(this).val() );
+                            var _get = removeValueOnArray(_GET.generation.split(','), $(this).val());
                             _GET.generation = _get.join(',');
 
                             if (_get.length === 0) {
                                 $('ul#generation li').find('input.checkbox-default').first().prop("checked", true);
                             }
                         }
-
+                        _updateFilter = true;
                         updateUrl();
                         updateResult();
+
                     });
                 });
             },
@@ -2398,10 +2589,11 @@ function loadAgeFrom() {
         $.ajax({
             type: "GET",
             url: "/filter/ageFrom",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
                 var len = data.length;
                 $('#ageFrom').html("").append("<option></option>");
-                $('#ageFrom').prop("selectedIndex",-1);
+                $('#ageFrom').prop("selectedIndex", -1);
                 for (var i = 0; i < len; i++) {
                     $('#ageFrom').append('<option value="' + data[i]['age_range_top'] + '">' + data[i]['age_range_top'] + '</option>');
                 }
@@ -2409,8 +2601,7 @@ function loadAgeFrom() {
                 /* pre-select filter items */
                 if (_GET['ageFrom'] !== undefined) {
                     var seletedageFrom = _GET.ageFrom.split(',');
-                    if (seletedageFrom.length > 0)
-                    {
+                    if (seletedageFrom.length > 0) {
                         $('ul#ageFrom li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedageFrom.forEach(function (value) {
@@ -2431,15 +2622,17 @@ function loadAgeFrom() {
                         _GET.ageFrom = $('#ageFrom').val()
                     }
                     else {
-                        var _get = removeValueOnArray(_GET.ageFrom.split(','), $(this).val() );
+                        var _get = removeValueOnArray(_GET.ageFrom.split(','), $(this).val());
                         _GET.ageFrom = _get.join(',');
 
                         if (_get.length === 0) {
                             $('ul#ageFrom li').find('input.checkbox-default').first().prop("checked", true);
                         }
                     }
+                    _updateFilter = true;
                     updateUrl();
                     updateResult();
+
                 });
             },
             error: function (result) {/**/
@@ -2453,35 +2646,34 @@ function loadAgeTo() {
         $.ajax({
             type: "GET",
             url: "/filter/ageTo",
+            data: window.location.search.substr(1, window.location.search.length),
             success: function (data) {
-                var len =  data.length;
+                var len = data.length;
                 $('#ageTo').html("").append("<option></option>")
-                $('#ageTo').prop("selectedIndex",-1);
+                $('#ageTo').prop("selectedIndex", -1);
 
-                for(var i=0;i<len;i++){
+                for (var i = 0; i < len; i++) {
                     $('#ageTo').append('<option value="' + data[i]['age_range_bottom'] + '">' + data[i]['age_range_bottom'] + '</option>');
                 }
 
-                $('input#age').change(function(){
-                    if ($(this).is(":checked"))
-                    {
-                        $('#ageTo').prop("selectedIndex",-1);
-                        $('#ageFrom').prop("selectedIndex",-1);
+                $('input#age').change(function () {
+                    if ($(this).is(":checked")) {
+                        $('#ageTo').prop("selectedIndex", -1);
+                        $('#ageFrom').prop("selectedIndex", -1);
                     }
                 });
 
                 /* pre-select filter items */
                 if (_GET['ageTo'] !== undefined) {
                     var seletedageTo = _GET.ageTo.split(',');
-                    if (seletedageTo.length > 0)
-                    {
+                    if (seletedageTo.length > 0) {
                         $('ul#ageTo li').first().find('input.checkbox-default').prop("checked", false);
                     }
                     seletedageTo.forEach(function (value) {
                         $('select#ageTo option').each(function (index, element) {
                             var input = $(this);
                             if (input.val() === value) {
-                                input.attr("selected","true");
+                                input.attr("selected", "true");
                                 return;
                             }
                         });
@@ -2495,15 +2687,17 @@ function loadAgeTo() {
                         _GET.ageTo = $('#ageTo').val()
                     }
                     else {
-                        var _get = removeValueOnArray(_GET.ageTo.split(','), $(this).val() );
+                        var _get = removeValueOnArray(_GET.ageTo.split(','), $(this).val());
                         _GET.ageTo = _get.join(',');
 
                         if (_get.length === 0) {
                             $('ul#ageTo li').find('input.checkbox-default').first().prop("checked", true);
                         }
                     }
+                    _updateFilter = true;
                     updateUrl();
                     updateResult();
+
                 });
             },
             error: function (result) {/**/
@@ -2527,7 +2721,7 @@ function loadTimeStart() {
                     var input = $(this);
                     if (input.val() === hour) {
                         input.attr("selected", "true");
-                        $('input#timeStar-any').prop("checked",false);
+                        $('input#timeStar-any').prop("checked", false);
                         return;
                     }
                 });
@@ -2536,52 +2730,52 @@ function loadTimeStart() {
                     var input = $(this);
                     if (input.val() === minute) {
                         input.attr("selected", "true");
-                        $('input#timeStar-any').prop("checked",false);
+                        $('input#timeStar-any').prop("checked", false);
                         return;
                     }
                 });
             });
         }
 
-        $('input#timeStar-any').change(function(){
-            if ($(this).is(":checked"))
-            {
-                $('#timeStartHour').prop("selectedIndex",-1);
-                $('#timeStartMinute').prop("selectedIndex",-1);
+        $('input#timeStar-any').change(function () {
+            if ($(this).is(":checked")) {
+                $('#timeStartHour').prop("selectedIndex", -1);
+                $('#timeStartMinute').prop("selectedIndex", -1);
 
                 _GET.timeStart = '';
-
+                _updateFilter = true;
                 updateUrl();
                 updateResult()
+
             }
         });
 
         /* Update result when any item selected */
         $('select#timeStartHour').change(function () {
-            if (($("#timeStartHour").val() !== '' && $("#timeStartHour").val() !== null)&& ($("#timeStartMinute").val() !== '' && $("#timeStartMinute").val() !== null))
-            {
-                _GET.timeStart = $("#timeStartHour").val() + ":" + ($("#timeStartMinute").val() !== '' && $("#timeStartMinute").val() !== null? $("#timeStartMinute").val() : '00');
-                $('input#timeStar-any').prop("checked",false);
+            if (($("#timeStartHour").val() !== '' && $("#timeStartHour").val() !== null) && ($("#timeStartMinute").val() !== '' && $("#timeStartMinute").val() !== null)) {
+                _GET.timeStart = $("#timeStartHour").val() + ":" + ($("#timeStartMinute").val() !== '' && $("#timeStartMinute").val() !== null ? $("#timeStartMinute").val() : '00');
+                $('input#timeStar-any').prop("checked", false);
             }
-
+            _updateFilter = true;
             updateUrl();
             updateResult();
+
 
         });
 
         $('select#timeStartMinute').change(function () {
-            if (($("#timeStartHour").val() !== '' && $("#timeStartHour").val() !== null)&& ($("#timeStartMinute").val() !== '' && $("#timeStartMinute").val() !== null))
-            {
+            if (($("#timeStartHour").val() !== '' && $("#timeStartHour").val() !== null) && ($("#timeStartMinute").val() !== '' && $("#timeStartMinute").val() !== null)) {
                 _GET.timeStart = ($("#timeStartHour").val() !== '' && $("#timeStartHour").val() !== null ? $("#timeStartHour").val() : '00') + ":" + $("#timeStartMinute").val();
-                $('input#timeStar-any').prop("checked",false);
+                $('input#timeStar-any').prop("checked", false);
             }
-
+            _updateFilter = true;
             updateUrl();
             updateResult();
+
+
         });
     }
 }
-
 
 function loadTimeEnd() {
     if ($('#timeEndHour').length > 0 && $('#timeEndMinute').length > 0) {
@@ -2597,7 +2791,7 @@ function loadTimeEnd() {
                     var input = $(this);
                     if (input.val() === hour) {
                         input.attr("selected", "true");
-                        $('input#timeEnd-any').prop("checked",false);
+                        $('input#timeEnd-any').prop("checked", false);
                         return;
                     }
                 });
@@ -2606,48 +2800,48 @@ function loadTimeEnd() {
                     var input = $(this);
                     if (input.val() === minute) {
                         input.attr("selected", "true");
-                        $('input#timeEnd-any').prop("checked",false);
+                        $('input#timeEnd-any').prop("checked", false);
                         return;
                     }
                 });
             });
         }
 
-        $('input#timeEnd-any').change(function(){
-            if ($(this).is(":checked"))
-            {
-                $('#timeEndHour').prop("selectedIndex",-1);
-                $('#timeEndMinute').prop("selectedIndex",-1);
+        $('input#timeEnd-any').change(function () {
+            if ($(this).is(":checked")) {
+                $('#timeEndHour').prop("selectedIndex", -1);
+                $('#timeEndMinute').prop("selectedIndex", -1);
 
                 _GET.timeEnd = '';
-
+                _updateFilter = true;
                 updateUrl();
-                updateResult()
+                updateResult();
+
             }
         });
 
         /* Update result when any item selected */
         $('select#timeEndHour').change(function () {
-            if (($("#timeEndHour").val() !== '' && $("#timeEndHour").val() !== null)&& ($("#timeEndMinute").val() !== '' && $("#timeEndMinute").val() !== null))
-            {
+            if (($("#timeEndHour").val() !== '' && $("#timeEndHour").val() !== null) && ($("#timeEndMinute").val() !== '' && $("#timeEndMinute").val() !== null)) {
                 _GET.timeEnd = $("#timeEndHour").val() + ":" + ($("#timeEndMinute").val() !== '' && $("#timeEndMinute").val() !== null ? $("#timeEndMinute").val() : '00');
-                $('input#timeEnd-any').prop("checked",false);
+                $('input#timeEnd-any').prop("checked", false);
             }
-
+            _updateFilter = true;
             updateUrl();
             updateResult();
+
         });
 
         $('select#timeEndMinute').change(function () {
             //console.log($("#timeEndHour").val() !== '' && $("#timeEndMinute").val() !== '');
-            if (($("#timeEndHour").val() !== '' && $("#timeEndHour").val() !== null)&& ($("#timeEndMinute").val() !== '' && $("#timeEndMinute").val() !== null))
-            {
+            if (($("#timeEndHour").val() !== '' && $("#timeEndHour").val() !== null) && ($("#timeEndMinute").val() !== '' && $("#timeEndMinute").val() !== null)) {
                 _GET.timeEnd = ($("#timeEndMinute").val() !== '' && $("#timeEndMinute").val() !== null ? $("#timeEndHour").val() : '00') + ":" + $("#timeEndMinute").val();
-                $('input#timeEnd-any').prop("checked",false);
+                $('input#timeEnd-any').prop("checked", false);
             }
-
+            _updateFilter = true;
             updateUrl();
             updateResult();
+
         });
 
     }
@@ -2659,10 +2853,11 @@ function loadKeyword() {
 
         /* pre-select filter items */
         if (_GET['keyword'] !== undefined) {
-            $('#search-keyword').val(_GET['keyword']);
-            $('#keyword').val(_GET['keyword']);
+            $('#search-keyword').val(_GET['keyword'].trim());
+            $('#keyword').val(_GET['keyword'].trim());
         }
-        if (_GET['searchKeywordBy'] !== undefined) {
+        if (_GET['searchKeywordBy'] !== undefined && _GET.keyword !== undefined) {
+
             var seletedkeyword = _GET.keyword.split(',');
 
             seletedkeyword.forEach(function (value) {
@@ -2679,18 +2874,20 @@ function loadKeyword() {
         /* Update result when any item selected */
         $('#searchKeywordBy').change(function () {
             if ($('#keyword').val().trim().length > 0) {
-                _GET.searchKeywordBy = $('#searchKeywordBy').val();
-                _GET.keyword = $('#keyword').val();
+                _GET.searchKeywordBy = $('#searchKeywordBy').val().trim();
+                _GET.keyword = $('#keyword').val().trim();
 
-                $('#search-keyword').val(_GET['keyword']);
-                $('#keyword').val(_GET['keyword']);
+                $('#search-keyword').val(_GET['keyword'].trim());
+                $('#keyword').val(_GET['keyword'].trim());
             }
             else {
                 _GET.searchKeywordBy = '';
                 _GET.keyword = '';
             }
+            _updateFilter = true;
             updateUrl();
             updateResult();
+
         });
 
         /* enter on keyword input */
@@ -2702,18 +2899,21 @@ function loadKeyword() {
 
         $('#keyword').change(function () {
             if ($('#keyword').val().trim().length > 0) {
-                _GET.searchKeywordBy = $('#searchKeywordBy').val();
-                _GET.keyword = $('#keyword').val();
+                _GET.searchKeywordBy = $('#searchKeywordBy').val().trim();
+                _GET.keyword = $('#keyword').val().trim();
             }
             else {
                 _GET.searchKeywordBy = '';
                 _GET.keyword = '';
             }
+            _updateFilter = true;
             updateUrl();
             updateResult();
+
         });
     }
 }
+
 function loadSearchKeyword() {
 
     /* enter on keyword input */
@@ -2725,61 +2925,72 @@ function loadSearchKeyword() {
 
     /* pre-select filter items */
     if (_GET['keyword'] !== undefined) {
-        $('#search-keyword').val(_GET['keyword']);
-        $('#keyword').val(_GET['keyword']);
+        $('#search-keyword').val(_GET['keyword'].trim());
+        $('#keyword').val(_GET['keyword'].trim());
     }
 
 
-    $('#search').click(function () {
+    $('#search').click(function (e) {
+        e.preventDefault();
         if ($('#search-keyword').val().trim().length > 0) {
             _GET.searchKeywordBy = 'contain';
-            _GET.keyword = $('#search-keyword').val();
+            _GET.keyword = $('#search-keyword').val().trim();
 
-            $('#search-keyword').val(_GET['keyword']);
-            $('#keyword').val(_GET['keyword']);
+            $('#search-keyword').val(_GET['keyword'].trim());
+            $('#keyword').val(_GET['keyword'].trim());
         }
         else {
             _GET.searchKeywordBy = '';
             _GET.keyword = '';
         }
+        _updateFilter = true;
+        loadHints();
         updateUrl();
         updateResult();
+
     });
 
 }
 
-function CheckNumPage(){
-
-    $('a.left').css('pointer-events','inherit');
-    if ( $("#currentPage").val() == 1)
-    {
+function CheckNumPage() {
+    $('a.left').css('pointer-events', 'inherit');
+    if ($("#currentPage").val() == 1) {
         $('a.left').css('pointer-events', 'none');
         $('a.left').parent().addClass('active');
+        // $('.pagination-group').css('display','none');
     }
     $('a.right').css('pointer-events', 'inherit');
-    if ( $("#totalPage").val() == $("#currentPage").val() )
-    {
+    if ($("#totalPage").val() == $("#currentPage").val()) {
         $('a.right').css('pointer-events', 'none');
         $('a.right').parent().addClass('active');
     }
+
+    /*Hide pagination when 1 page*/
+    /*Check total page has exist*/
+    if ($('#totalPage').length > 0) {
+        /*Check page number*/
+        if ($('#totalPage').val() == 1) {
+            /*hide pagination*/
+            $('.pagination-group').css('display', 'none');
+        }
+    }
 }
 
-function clearSearchBox()
-{
-    $(".clear-btn").click(function(){
+function clearSearchBox() {
+    $(".clear-btn").click(function () {
         $('#search-keyword').val('');
         $('.deleteSearchBox').removeClass('clear-btn');
-        $(this).css('display','none');
+        $(this).css('display', 'none');
     });
-    $('#search-keyword').on('input', function(){
-        if($('#search-keyword').val() !== null && $('#search-keyword').val().length > 0){
+    $('#search-keyword').on('input', function () {
+        if ($('#search-keyword').val() !== null && $('#search-keyword').val().trim().length > 0) {
             // $('.deleteSearchBox').addClass('clear-btn');
-            $(".clear-btn").css('display','inline-block');
+            $(".clear-btn").css('display', 'inline-block');
             setupAutoComplete();
         }
-        if($('#search-keyword').val().length === 0){
+        if ($('#search-keyword').val().length === 0) {
             // $('.deleteSearchBox').removeClass('clear-btn');
-            $(".clear-btn").css('display','none');
+            $(".clear-btn").css('display', 'none');
         }
     });
 }
@@ -2787,17 +2998,17 @@ function clearSearchBox()
 function setupAutoComplete() {
 
     /** keypress, keyup, keydown**/
-    $('#search-keyword').on('input', function(e) {
+    $('#search-keyword').on('input', function (e) {
         var displayData = '';
         if ($(this).val().length === 0) {
             $("#suggesstion-box").hide();
             return;
         }
 
-        for(var i=0;i<fullSuggestion.length;i++){
-            var str=fullSuggestion[i];
+        for (var i = 0; i < fullSuggestion.length; i++) {
+            var str = fullSuggestion[i];
             //console.log(str.indexOf($(this).val()) + '|' +  fullSuggestion[i]);
-            if(str.indexOf($(this).val() ) >= 0){
+            if (str.indexOf($(this).val()) >= 0) {
                 //it contains searchterm do something with it.
                 displayData += '<li onClick="selectCountry(\'' + fullSuggestion[i] + '\')">' + fullSuggestion[i] + '</li>';
             }
@@ -2809,8 +3020,8 @@ function setupAutoComplete() {
     });
 
     /* Hide suggest when move out of control*/
-    $('#search-keyword').on('blur', function(){
-        setTimeout(function(){
+    $('#search-keyword').on('blur', function () {
+        setTimeout(function () {
             $("#suggesstion-box").hide();
         }, 500);
     });
@@ -2823,21 +3034,47 @@ function selectCountry(val) {
     $("#suggesstion-box").hide();
 }
 
-function ScorllBallItem(){
+function ScorllBallItem() {
     // .sider-bar ul li.parent-sider-bar:hover .child-sider-bar li
-    $('.parent-sider-bar').hover(function(){
-        if($(this).children('.child-sider-bar').children().length > 9){
+    $('.parent-sider-bar').hover(function () {
+        if ($(this).children('.child-sider-bar').children().length > 9) {
             $(this).children('.child-sider-bar').addClass('scroll-bar-item');
         }
     });
 }
 
-function ResizeSuggestSearch(){
+function ResizeSuggestSearch() {
     var widthSearch = $('#search-keyword').width() + 18;
-    $('#data-list').css('width',widthSearch);
+    $('#data-list').css('width', widthSearch);
 
-    $(window).resize(function(){
+    $(window).resize(function () {
         var widthSearch = $('#search-keyword').width() + 18;
-        $('#data-list').css('width',widthSearch);
+        $('#data-list').css('width', widthSearch);
     });
+}
+
+function loadingOverlay() {
+
+    /* overlay spinner when on ready page load */
+    if (flagLoad === false) {
+        if ($('.loading').length > 0) {
+            $('#loading').removeClass('loading');
+            flagLoad = true;
+        }
+    }
+    else {
+
+        if ($('.loading').length > 0) {
+            $('#loading').addClass('loading');
+        }
+
+        /* overlay spinner when update filter */
+        if (_updateFilter === true) {
+            $('#loading').addClass('loading');
+        }
+        else if (_updateFilter === false) {
+            $('#loading').removeClass('loading');
+        }
+        /**/
+    }
 }

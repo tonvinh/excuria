@@ -17,7 +17,7 @@ class Course extends BaseSearch
 		DB::enableQueryLog();
 
 		$mem = new Memcached();
-		$mem->addServer("memcache.excuri.com", 11211);
+		$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 		/* Get Default Logo Link on setting_object table */
 		$logoMem = $mem->get('logo_course');
@@ -108,7 +108,7 @@ class Course extends BaseSearch
 					(isset($conditions['sort']) && $conditions['sort'] !== null ? ", " . $extraGroup : '' )
 				)
 			)
-			->orderByRaw(isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'course.day_of_week DESC, course.course_id DESC')
+			->orderByRaw(isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'course.day_of_week ASC, course.course_id DESC')
 			->limit($limit)
 			->offset(isset($conditions['page']) && $conditions['page'] !== null ? ($conditions['page']-1) * $limit : 0)
 			->get();
@@ -179,7 +179,7 @@ class Course extends BaseSearch
 					(isset($conditions['sort']) && $conditions['sort'] !== null ? ", " . $extraGroup : '' )
 				)
 			)
-			->orderByRaw(isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'course.day_of_week DESC, course.course_id DESC')
+			->orderByRaw(isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'course.day_of_week ASC, course.course_id DESC')
 			->get();
 
 		//echo("<br>Total : " . sizeof($searchData) . " records");
@@ -198,8 +198,8 @@ class Course extends BaseSearch
 				'entity_name' => $data->entity_name,
 				'curriculum_name' => $data->curriculum_name,
 				'day_name' => $day->name,
-				'time_start' => date('h:i',strtotime($data->time_start)),
-				'time_end' => date('h:i',strtotime($data->time_end))];
+				'time_start' => date('H:i',strtotime($data->time_start)),
+				'time_end' => date('H:i',strtotime($data->time_end))];
 
 			/*$schedules = DB::table('schedule')
 				->select('schedule.schedule_id', 'program.name')
@@ -263,7 +263,7 @@ class Course extends BaseSearch
 			switch ($name) {
 				case 'sortBy': {
 					if ($value === 'day') {
-						$strCondition = "course.day_of_week DESC, course.course_id DESC";
+						$strCondition = "course.day_of_week ASC, course.course_id DESC";
 					}
 					elseif ($value === 'location') {
 						$strCondition = "location.location_id ASC, entity.name ASC, course.course_id DESC";
@@ -729,6 +729,11 @@ class Course extends BaseSearch
 				}
 				case 'perPage': {
 					$conditions['limit'] = $value;
+					break;
+				}
+				case 'user_id':
+				{
+					$conditions['user_id'][] = $value;
 					break;
 				}
 			}

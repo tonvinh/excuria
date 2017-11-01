@@ -48,7 +48,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -101,14 +101,14 @@ class SearchController extends Controller
 
 				/*echo("Parameters support: Free Trial, Country, City, Location, Activity Type, Activity Classification, Activity,<br>");
 				echo("Event Type, Facility, Campus, Arena, Provider, Instructor, Program, Day, Start Time, End Time, Gender, Generation, Age, Keyword<br>");*/
-				//exit;
+
 				$search = new Course();
 				$conditions = $search->prepare($parameters);
 
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
@@ -167,7 +167,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -245,7 +245,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -300,7 +300,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -355,7 +355,7 @@ class SearchController extends Controller
 				$page = $request->input('page');
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
@@ -408,15 +408,146 @@ class SearchController extends Controller
 		}
 	}
 
+	public function searchCounter(Request $request, $type = null)
+	{
+		$result = null;
+		$parameter = null;
+		$conditions = array();
+
+		$type = (!isset($type) ? 'provider' : $type);
+
+		if ($request->activeTAB != '' && $request->activeTAB !== '')
+		{
+			$type = $request->activeTAB;
+		}
+		else{
+			$type = 'provider';
+		}
+
+		switch ($type) {
+			case 'provider': {
+				$parameters = $request->all();
+				$search = new Provider();
+				$conditions = $search->prepare($parameters);
+
+				$result = $search->search($conditions);
+
+				return $result['total'];
+
+				break;
+			}
+			case 'course': {
+				$parameters = $request->all();
+				$search = new Course();
+				$conditions = $search->prepare($parameters);
+				$result = $search->search($conditions);
+
+				return $result['total'];
+
+				break;
+			}
+			case 'instructor': {
+				$parameters = $request->all();
+
+				$search = new Instructor();
+				$conditions = $search->prepare($parameters);
+
+				$result = $search->search($conditions);
+
+
+				return $result['total'];
+
+				break;
+			}
+			default:
+				return 0;
+		}
+	}
+
 	public function prepareFilter(Request $request, $name)
 	{
 		$mem = new Memcached();
-		$mem->addServer("memcache.excuri.com", 11211);
+		$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 		switch ($name) {
+			case 'classAvailable': {
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
+
+				if ($resultMem) {
+
+					return Response::json($resultMem);
+
+				} else {
+
+					$none_memcache = false;
+					$_request = $request;
+					$_request->query->add(['classAvailable' => 'yes']);
+					$counter_yes = $this->searchCounter($_request, $_request['activeTAB']);
+					$_request['classAvailable'] = 'no';
+					$counter_no = $this->searchCounter($_request, $_request['activeTAB']);
+
+					$result[] = ['name'=> 'Yes', 'counter' => $counter_yes];
+					$result[] = ['name'=> 'No', 'counter' => $counter_no];
+
+					$mem->set($name, $result) or $none_memcache = true;
+
+					if ($none_memcache) {
+
+						/* None memcache */
+						return Response::json($result);
+
+					} else {
+
+						/* Use memcache */
+						$resultMem = $mem->get($name);
+						return Response::json($resultMem);
+
+					}
+				}
+
+				break;
+			}
+			case 'freeTrial': {
+
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
+
+				if ($resultMem) {
+
+					return Response::json($resultMem);
+
+				} else {
+
+					$none_memcache = false;
+					$_request = $request;
+					$_request->query->add(['freeTrial' => 'yes']);
+					$counter_yes = $this->searchCounter($_request, $_request['activeTAB']);
+					$_request['freeTrial'] = 'no';
+					$counter_no = $this->searchCounter($_request, $_request['activeTAB']);
+
+					$result[] = ['name'=> 'Yes', 'counter' => $counter_yes];
+					$result[] = ['name'=> 'No', 'counter' => $counter_no];
+
+					$mem->set($name, $result) or $none_memcache = true;
+
+					if ($none_memcache) {
+
+						/* None memcache */
+						return Response::json($result);
+
+					} else {
+
+						/* Use memcache */
+						$resultMem = $mem->get($name);
+						return Response::json($resultMem);
+
+					}
+				}
+
+				break;
+			}
 			case 'country': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -424,26 +555,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('country', null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('country', null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'city': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -451,26 +572,15 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name, ['country' => $request->input('country')]);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('city', ['country' => $request->input('country')])) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('city', ['country' => $request->input('country')]);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'location': {
-
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -478,26 +588,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name, ['city' => $request->input('city')]);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('location', ['city' => $request->input('country')])) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('location', ['city' => $request->input('country')]);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'activityType': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -505,26 +605,14 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('activityType',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('activityType',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
-				break;
 			}
 			case 'activityClassification': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -532,27 +620,15 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name, ['activityType' => $request->input('activityType')]);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('activityClassification',['activityType'=>$request->input('activityType')])) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('activityClassification',['activityType'=>$request->input('activityType')]);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'activity': {
-
-				/* Use memcache */
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -560,26 +636,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name, ['activityClassification' => $request->input('activityClassification')]);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('activity',['activityClassification'=>$request->input('activityClassification')])) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('activity',['activityClassification'=>$request->input('activityClassification')]);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'eventType': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -587,26 +653,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('eventType',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('eventType',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'facility': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -614,26 +670,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('facility',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('facility',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'campus': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -641,26 +687,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,['facility' => $request->input('facility')]);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('campus',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('campus',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'arena': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -668,26 +704,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,['campus' => $request->input('campus')]);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('arena',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('arena',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'provider': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -695,26 +721,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('provider',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('provider',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'instructor': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -724,24 +740,41 @@ class SearchController extends Controller
 
 					$none_memcache = false;
 
-					$mem->set($name, new Filter('instructor',null)) or $none_memcache = true;
+					$result = new Filter('instructor',null);
+
+					foreach ($result->data as $data)
+					{
+
+						$_request = $request;
+						$_request->query->add(['user_id' => $data->user_id]);
+
+						$counter = $this->searchCounter($_request, $_request['activeTAB']);
+
+
+						$data->counter = $counter;
+					}
+
+					$mem->set($name, $result) or $none_memcache = true;
 
 					if ($none_memcache) {
+
 						/* None memcache */
-						$result = new Filter('instructor',null);
 						return Response::json($result->data);
+
 					} else {
 
 						/* Use memcache */
 						$resultMem = $mem->get($name);
 						return Response::json($resultMem->data);
+
 					}
 				}
+
 				break;
 			}
 			case 'program': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -749,30 +782,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('program',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('program',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}			
 			case 'gender': {
-				/* None memcache */
-				/*$result = new Filter('gender',null);
-				return Response::json($result->data);*/
 
-				/* Use memcache */
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -780,26 +799,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('gender',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('gender',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'generation': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -807,26 +816,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('generation',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('generation',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'day': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -834,26 +833,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('day',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('day',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}
 			case 'timeStart': {
 
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -861,30 +850,16 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('timeStart',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('timeStart',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
 			}			
 			case 'timeEnd': {
-				/* None memcache */
-				/*$result = new Filter('timeEnd',null);
-				return Response::json($result->data);*/
 
-				/* Use memcache */
-				$resultMem = $mem->get($name);
+				$resultMem = $mem->get($_SERVER['REQUEST_URI']);
 
 				if ($resultMem) {
 
@@ -892,23 +867,13 @@ class SearchController extends Controller
 
 				} else {
 
-					$none_memcache = false;
+					$data = $this->getResultMemcached($request, $mem, $name,null);
+					return Response::json($data);
 
-					$mem->set($name, new Filter('timeEnd',null)) or $none_memcache = true;
-
-					if ($none_memcache) {
-						/* None memcache */
-						$result = new Filter('timeEnd',null);
-						return Response::json($result->data);
-					} else {
-
-						/* Use memcache */
-						$resultMem = $mem->get($name);
-						return Response::json($resultMem->data);
-					}
 				}
+
 				break;
-			}			
+			}
 			case 'ageFrom': {
 
 				$resultMem = $mem->get($name);
@@ -935,7 +900,7 @@ class SearchController extends Controller
 					}
 				}
 				break;
-			}			
+			}
 			case 'ageTo': {
 
 				$resultMem = $mem->get($name);
@@ -1004,7 +969,7 @@ class SearchController extends Controller
 				$search = new Provider();
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 				$resultMem = $mem->get('entity_provider');
 
@@ -1036,7 +1001,7 @@ class SearchController extends Controller
 				$search = new Course();
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 				$resultMem = $mem->get('entity_course');
 
@@ -1068,7 +1033,7 @@ class SearchController extends Controller
 				$search = new Instructor();
 
 				$mem = new Memcached();
-				$mem->addServer("memcache.excuri.com", 11211);
+				$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 				$resultMem = $mem->get('entity_instructor');
 
@@ -1095,6 +1060,44 @@ class SearchController extends Controller
 				}
 				break;
 			}
+		}
+	}
+
+	public function getResultMemcached(Request $request, $mem, $name, $parameters)
+	{
+		/*$mem = new Memcached();
+		$mem->addServer(env('memcached_server'), env('memcached_port'));*/
+
+		$none_memcache = false;
+
+		if ( sizeof($parameters) > 0)
+		{
+			$result = new Filter($name,$parameters);
+		}
+		else {
+			$result = new Filter($name, null);
+		}
+
+		foreach ($result->data as $data)
+		{
+
+			$_request = $request;
+			$_request->query->add([$name => $data->name]);
+
+			$counter = $this->searchCounter($_request, $_request['activeTAB']);
+
+			$data->counter = $counter;
+		}
+
+		$mem->set($_SERVER['REQUEST_URI'], $result) or $none_memcache = true;
+
+		if ($none_memcache) {
+			/* None memcache */
+			return $result->data;
+		} else {
+			/* Use memcache */
+			$resultMem = $mem->get($_SERVER['REQUEST_URI']);
+			return $resultMem->data;
 		}
 	}
 }

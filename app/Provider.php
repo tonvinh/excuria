@@ -13,7 +13,10 @@ class Provider extends BaseSearch
 		$searchData = DB::table('course')->leftjoin('curriculum', 'course.curriculum_id', 'curriculum.curriculum_id')
 			->leftjoin('program', 'program.program_id', 'curriculum.program_id')
 			->join('provider', 'program.provider_id', 'provider.provider_id')
-			->leftjoin('schedule', 'course.course_id', 'schedule.course_id')->distinct()->pluck('program.provider_id');
+			->leftjoin('schedule', 'course.course_id', 'schedule.course_id')->distinct()
+			->whereRaw('schedule.course_id is not null')
+			->orderByRaw('program.name ASC')
+			->pluck('program.provider_id');
 
 		$providers = [];
 
@@ -32,10 +35,10 @@ class Provider extends BaseSearch
 		$result = array();
 		$alphabets = [];
 
-		DB::enableQueryLog();
+
 
 		$mem = new Memcached();
-		$mem->addServer("memcache.excuri.com", 11211);
+		$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 		/* Get Default Logo Link on setting_object table */
 		$logoMem = $mem->get('logo_provider');
@@ -56,12 +59,14 @@ class Provider extends BaseSearch
 			}
 		}
 
+		$expressionHasClass = $this->providerHasClass();
+
 		$extraGroup = (isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : '' );
 		$extraGroup = str_replace(' ASC', '',$extraGroup);
 		$extraGroup = str_replace(' DESC', '',$extraGroup);
 
 		$searchData = DB::table('provider')
-			->select('provider.provider_id', DB::raw('provider.name provider_name'), DB::raw('entity.logo entity_logo'))
+			->select('provider.provider_id', DB::raw('provider.name provider_name'), DB::raw('entity.logo entity_logo'), DB::raw('program.provider_id in (' . implode(',' ,$expressionHasClass) . ') hasClass'))
 			->whereRaw(
 				(isset($conditions['class_available']) && sizeof($conditions['class_available']) > 0 ? "(" . implode(" OR ", $conditions['class_available']) . ") AND " : '') .
 				(isset($conditions['country_id']) && $conditions['country_id'] !== null ? "entity.country_id in (" . implode(",", $conditions['country_id']) . ") AND " : '') .
@@ -93,12 +98,13 @@ class Provider extends BaseSearch
 					// . (isset($conditions['sort']) && $conditions['sort'] !== null ? ", " . $extraGroup : '' )
 				)
 			)
-			->orderByRaw(( isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'course.course_id DESC'))
+			->orderByRaw(( isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'hasClass DESC, provider.name ASC'))
 			->limit($limit)
 			->offset(isset($conditions['page']) && $conditions['page'] !== null ? ($conditions['page'] - 1) * $limit : 0)
 			->get();
-
-		$searchAll = DB::table('provider')->select('provider.provider_id', DB::raw('provider.name provider_name'), DB::raw('entity.logo entity_logo'))
+		DB::enableQueryLog();
+		$searchAll = DB::table('provider')
+			->select('provider.provider_id', DB::raw('provider.name provider_name'), DB::raw('entity.logo entity_logo'), DB::raw('program.provider_id in (' . implode(',' ,$expressionHasClass) . ') hasClass'))
 			->whereRaw(
 				(isset($conditions['class_available']) && sizeof($conditions['class_available']) > 0 ? "(" . implode(" OR ", $conditions['class_available']) . ") AND " : '') .
 
@@ -130,7 +136,7 @@ class Provider extends BaseSearch
 					// . (isset($conditions['sort']) && $conditions['sort'] !== null ? ", " . $extraGroup : '' )
 				)
 			)
-			->orderByRaw(( isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'course.course_id DESC'))
+			->orderByRaw(( isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : 'hasClass DESC, provider.name ASC'))
 			->get();
 
 		foreach ($searchData as $data) {
@@ -157,7 +163,6 @@ class Provider extends BaseSearch
 					('program.status = 0')
 				)
 				->distinct()
-				//->groupBy('activity.logo')
 				->get();
 			$searchActivities = [];
 			foreach ($activities as $activity) {
@@ -189,7 +194,7 @@ class Provider extends BaseSearch
 					if ($value === 'provider') {
 						$strCondition = "provider.name ASC";
 					} elseif ($value === 'class') {
-						$strCondition = "course.course_id DESC";
+						$strCondition = "hasClass DESC, provider.name ASC";
 					}
 					$conditions['sort'] = $strCondition;
 					break;

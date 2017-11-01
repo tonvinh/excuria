@@ -21,3 +21,7 @@ Route::get('total/{type}', 'SearchController@getTotalRecord');
 Route::get('search/{type}', 'SearchController@search');
 Route::get('searchUpdate/{type}', 'SearchController@searchUpdate');
 Route::get('filter/{name}', 'SearchController@prepareFilter');
+
+/**/
+
+Route::get('navigator', 'NavigatorController@index');

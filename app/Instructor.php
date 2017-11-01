@@ -33,7 +33,7 @@ class Instructor extends BaseSearch
 		$alphabets = [];
 
 		$mem = new Memcached();
-		$mem->addServer("memcache.excuri.com", 11211);
+		$mem->addServer(env('memcached_server'), env('memcached_port'));
 
 		/* Get Default Logo Link on setting_object table */
 		$logoMem1 = $mem->get('logo_provider');
@@ -61,7 +61,6 @@ class Instructor extends BaseSearch
 			$mem->set('logo_instructor', $default_logoInstructor);
 		}
 
-		DB::enableQueryLog();
 
 		if (isset($conditions['alphabet']) && $conditions['alphabet'] !== null && sizeof($conditions['alphabet']) > 0) {
 			foreach ($conditions['alphabet'] as $item) {
@@ -70,12 +69,17 @@ class Instructor extends BaseSearch
 			}
 		}
 
+		$expressionHasClass = $this->instructorHasClass();
+
 		$extraGroup = (isset($conditions['sort']) && $conditions['sort'] !== null ? $conditions['sort'] : '' );
 		$extraGroup = str_replace(' ASC', '',$extraGroup);
 		$extraGroup = str_replace(' DESC', '',$extraGroup);
 
+		DB::enableQueryLog();
+
 		$searchData = DB::table('user')
-			->select('user.first_name', 'user.middle_name', 'user.last_name', 'program.provider_id', DB::raw('user.image user_logo'), DB::raw('entity.logo entity_logo'))
+			->select('user.first_name', 'user.middle_name', 'user.last_name', 'program.program_id', 'program.provider_id', DB::raw('user.image user_logo'),
+				DB::raw('entity.logo entity_logo'), DB::raw('user.user_id in (' . implode(',' ,$expressionHasClass) . ') hasClass'))
 			->whereRaw(
 				/*(isset($conditions['class_available']) && $conditions['class_available'] !== null ?
 					( sizeof($conditions['class_available']) > 1 ? "(" . implode(" OR ", $conditions['class_available']) . ') ' :
@@ -95,9 +99,8 @@ class Instructor extends BaseSearch
 				(isset($conditions['keyword']) && sizeof($conditions['keyword']) > 0 ? "(" . implode(" OR ", $conditions['keyword']) . ") AND " : '') .
 
 				(isset($alphabets) && sizeof($alphabets) > 0 ? "(" . join(" OR ", $alphabets) . ") AND " : '') .
+				(isset($conditions['user_id']) && $conditions['user_id'] !== null ? "user.user_id = " . $conditions['user_id'] . " AND " : '') .
 				('user.first_name is not null')
-				/*('program.program_id is not null and ') .
-				('entity.is_provider = 1')*/
 			)
 			->leftjoin('schedule', 'user.user_id', 'schedule.instructor_id')
 			->leftjoin('course', 'schedule.course_id', 'course.course_id')
@@ -116,12 +119,14 @@ class Instructor extends BaseSearch
 					(isset($conditions['sort']) && $conditions['sort'] !== null ? ", " . $extraGroup : '' )
 				)
 			)
-			->orderByRaw(isset($conditions['sort']) && $conditions['sort'] !== null ? DB::raw($conditions['sort']) : DB::raw('user.first_name ASC, user.last_name ASC'))
+			->orderByRaw(DB::raw('hasClass DESC, user.first_name ASC, user.last_name ASC') . (isset($conditions['sort']) && $conditions['sort'] !== null ? ',' . DB::raw($conditions['sort']) : ''))
 			->limit($limit)
 			->offset(isset($conditions['page']) && $conditions['page'] != null ? ($conditions['page']-1) * $limit : 0)
 			->get();
+
 		$searchAll = DB::table('user')
-			->select('user.first_name', 'user.middle_name', 'user.last_name', 'program.provider_id', DB::raw('user.image user_logo'), DB::raw('entity.logo entity_logo'))
+			->select('user.first_name', 'user.middle_name', 'user.last_name', 'program.program_id', 'program.provider_id', DB::raw('user.image user_logo'),
+				DB::raw('entity.logo entity_logo'), DB::raw('user.user_id in (' . implode(',' ,$expressionHasClass) . ') hasClass'))
 			->whereRaw(
 				/*(isset($conditions['class_available']) && $conditions['class_available'] !== null ?
 					( sizeof($conditions['class_available']) > 1 ? "(" . implode(" OR ", $conditions['class_available']) . ') ' :
@@ -141,9 +146,8 @@ class Instructor extends BaseSearch
 				(isset($conditions['keyword']) && sizeof($conditions['keyword']) > 0 ? "(" . implode(" OR ", $conditions['keyword']) . ") AND " : '') .
 
 				(isset($alphabets) && sizeof($alphabets) > 0 ? "(" . join(" OR ", $alphabets) . ") AND " : '') .
+				(isset($conditions['user_id']) && $conditions['user_id'] !== null ? "user.user_id = " . $conditions['user_id'] . " AND " : '') .
 				('user.first_name is not null')
-			/*('program.program_id is not null and ') .
-			('entity.is_provider = 1')*/
 			)
 			->leftjoin('schedule', 'user.user_id', 'schedule.instructor_id')
 			->leftjoin('course', 'schedule.course_id', 'course.course_id')
@@ -162,7 +166,7 @@ class Instructor extends BaseSearch
 					(isset($conditions['sort']) && $conditions['sort'] !== null ? ", " . $extraGroup : '' )
 				)
 			)
-			->orderByRaw(isset($conditions['sort']) && $conditions['sort'] !== null ? DB::raw($conditions['sort']) : DB::raw('user.first_name ASC, user.last_name ASC'))
+			->orderByRaw(DB::raw('hasClass DESC, user.first_name ASC, user.last_name ASC') . (isset($conditions['sort']) && $conditions['sort'] !== null ? ',' . DB::raw($conditions['sort']) : ''))
 			->get();
 
 		//var_dump("Total : " . sizeof($result) . " records");
@@ -183,7 +187,7 @@ class Instructor extends BaseSearch
 				->select('activity.logo')
 				->join('activity', 'program.activity_id', 'activity.activity_id')
 				->leftjoin('activity_classification', 'activity.activity_classification_id', 'activity_classification.activity_classification_id')
-				->where('program.provider_id', $data->provider_id)
+				->where('program.program_id', $data->program_id)
 				->whereRaw(
 					(isset($conditions['activity_id']) && $conditions['activity_id'] !== null ? "program.activity_id in (" . implode(",", $conditions['activity_id']) . ") AND " : '') .
 					//(isset($conditions['activity_classification_id']) && $conditions['activity_classification_id'] !== null ? "activity.activity_classification_id = " . $conditions['activity_classification_id'] . " AND " : '') .
@@ -478,6 +482,10 @@ class Instructor extends BaseSearch
 				case 'perPage': {
 					$conditions['limit'] = $value;
 					break;
+				}
+				case 'user_id':
+				{
+					$conditions['user_id'] = $value;
 				}
 			}
 		}
